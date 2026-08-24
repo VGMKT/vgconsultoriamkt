@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "VG Marketing"
+description = "Site institucional da VG Marketing, consultoria de marketing com páginas de serviços e formulários de solicitação de orçamento."
+version = "1.0.0"
+id = "artifacts/vg-marketing"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25646
+
+[services.development]
+run = "pnpm --filter @workspace/vg-marketing run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/vg-marketing", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/vg-marketing/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25646"
+BASE_PATH = "/"

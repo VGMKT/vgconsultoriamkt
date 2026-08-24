@@ -1,0 +1,11 @@
+[build]
+  command = "pnpm --filter @workspace/vg-marketing run build"
+  publish = "artifacts/vg-marketing/dist/public"
+
+[build.environment]
+  BASE_PATH = "/"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

@@ -1,0 +1,6 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="128" height="128" rx="28" fill="#202F4D"/>
+  <path d="M31 34H72C86.3594 34 98 45.6406 98 60C98 74.3594 86.3594 86 72 86H56" stroke="#9FE4E5" stroke-width="10" stroke-linecap="round"/>
+  <path d="M31 34V94M31 64L64 94" stroke="white" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="76" y="108" fill="#9FE4E5" font-family="Arial, sans-serif" font-size="18" font-weight="700">VG</text>
+</svg>
