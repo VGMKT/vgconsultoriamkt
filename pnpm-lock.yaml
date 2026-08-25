@@ -668,13 +668,7 @@ importers:
         version: 0.31.10
 
   scripts:
-    devDependencies:
-      '@types/node':
-        specifier: 'catalog:'
-        version: 25.9.5
-      tsx:
-        specifier: 'catalog:'
-        version: 4.23.1
+    {}
 
 packages:
 
