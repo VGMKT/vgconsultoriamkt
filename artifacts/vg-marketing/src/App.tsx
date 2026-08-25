@@ -754,15 +754,16 @@ type CrmLead = {
   message: string | null;
   source: string;
   status: string;
+  assignedUserId: number | null;
   createdAt: string;
 };
 
 type ManualLeadForm = { name: string; email: string; whatsapp: string; company: string; service: string; message: string; source: CrmSource };
 type CrmNote = { id: number; body: string; createdAt: string };
 type CrmActivity = { id: number; type: string; detail: string | null; createdAt: string };
-type CrmRole = 'owner' | 'admin' | 'manager' | 'operator' | 'viewer';
-type CrmUser = { clerkUserId: string; email: string; name: string; role: CrmRole; active: number; lastSeenAt: string | null; updatedAt: string };
-const CRM_ROLE_LABELS: Record<CrmRole, string> = { owner: 'Owner', admin: 'Administrador', manager: 'Gestor', operator: 'Operador', viewer: 'Consulta' };
+type CrmRole = 'owner' | 'admin' | 'manager' | 'operator';
+type CrmUser = { id: number; clerkUserId: string | null; email: string; name: string; role: CrmRole; active: number; lastSeenAt: string | null; updatedAt: string };
+const CRM_ROLE_LABELS: Record<CrmRole, string> = { owner: 'Proprietário', admin: 'Administrador', manager: 'Gerente', operator: 'Consultor' };
 const CRM_STATUS_LABELS: Record<string, string> = {
   new: 'Novo',
   contacted: 'Contato iniciado',
@@ -929,10 +930,13 @@ function AdminPage() {
   const [savingLead, setSavingLead] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [teamMessage, setTeamMessage] = useState('');
   const [crmUser, setCrmUser] = useState<CrmUser | null>(null);
   const [team, setTeam] = useState<CrmUser[]>([]);
+  const [pendingRoles, setPendingRoles] = useState<Record<number, CrmRole>>({});
+  const [pendingAssignment, setPendingAssignment] = useState<number | null | undefined>(undefined);
   const [teamOpen, setTeamOpen] = useState(false);
-  const [newTeamUser, setNewTeamUser] = useState({ clerkUserId: '', email: '', name: '', role: 'operator' as CrmRole });
+  const [newTeamUser, setNewTeamUser] = useState({ email: '', name: '', role: 'operator' as CrmRole });
 
   const apiFetch = async (path: string, init: RequestInit = {}) => {
     const token = await getToken();
@@ -977,29 +981,57 @@ function AdminPage() {
     if (data.user.role === 'owner' || data.user.role === 'admin') {
       const usersResponse = await apiFetch('/api/users');
       if (usersResponse.ok) setTeam((await usersResponse.json() as { users: CrmUser[] }).users);
+    } else if (data.user.role === 'manager') {
+      const usersResponse = await apiFetch('/api/users/assignable');
+      if (usersResponse.ok) setTeam((await usersResponse.json() as { users: CrmUser[] }).users);
     }
   };
 
   const saveTeamUser = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setTeamMessage('');
     const response = await apiFetch('/api/users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newTeamUser) });
     if (!response.ok) {
       setError((await response.json().catch(() => null) as { error?: string } | null)?.error || 'Não foi possível adicionar o usuário.');
       return;
     }
-    setNewTeamUser({ clerkUserId: '', email: '', name: '', role: 'operator' });
+    setNewTeamUser({ email: '', name: '', role: 'operator' });
+    setTeamMessage(`Convite enviado para ${newTeamUser.email}.`);
     const usersResponse = await apiFetch('/api/users');
     if (usersResponse.ok) setTeam((await usersResponse.json() as { users: CrmUser[] }).users);
   };
 
   const updateTeamUser = async (member: CrmUser, change: { role?: CrmRole; active?: boolean }) => {
-    const response = await apiFetch(`/api/users/${member.clerkUserId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: change.role || member.role, active: change.active === undefined ? Boolean(member.active) : Boolean(change.active) }) });
+    const response = await apiFetch(`/api/users/${member.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: change.role || member.role, active: change.active === undefined ? Boolean(member.active) : Boolean(change.active) }) });
     if (!response.ok) {
       setError((await response.json().catch(() => null) as { error?: string } | null)?.error || 'Não foi possível atualizar o usuário.');
       return;
     }
-    setTeam((current) => current.map((item) => item.clerkUserId === member.clerkUserId ? { ...item, ...change, active: change.active === undefined ? item.active : change.active ? 1 : 0 } : item));
+    setTeam((current) => current.map((item) => item.id === member.id ? { ...item, ...change, active: change.active === undefined ? item.active : change.active ? 1 : 0 } : item));
+    if (change.role) {
+      setPendingRoles((current) => {
+        const next = { ...current };
+        delete next[member.id];
+        return next;
+      });
+    }
   };
+
+  const deleteTeamUser = async (member: CrmUser) => {
+    if (!window.confirm(`Excluir ${member.name} do CRM?`)) return;
+    const response = await apiFetch(`/api/users/${member.id}`, { method: 'DELETE' });
+    if (!response.ok) {
+      setError((await response.json().catch(() => null) as { error?: string } | null)?.error || 'Não foi possível excluir o usuário.');
+      return;
+    }
+    setTeam((current) => current.filter((item) => item.id !== member.id));
+  };
+
+  const manageableRoles: CrmRole[] = crmUser?.role === 'owner'
+    ? ['owner', 'admin', 'manager', 'operator']
+    : crmUser?.role === 'admin'
+      ? ['manager', 'operator']
+      : crmUser?.role === 'manager' ? ['operator'] : [];
 
   useEffect(() => {
     void Promise.all([loadLeads(), loadAccess()]).catch(() => setError('Não foi possível carregar seu acesso ao CRM.'));
@@ -1012,6 +1044,7 @@ function AdminPage() {
       if (!response.ok) throw new Error('detail-failed');
       const data = await response.json() as { lead: CrmLead; notes: CrmNote[]; activities: CrmActivity[] };
       setSelected(data.lead);
+      setPendingAssignment(data.lead.assignedUserId);
       setNotes(data.notes);
       setActivities(data.activities);
     } catch {
@@ -1034,6 +1067,23 @@ function AdminPage() {
     setSelected(data.lead);
     await loadLeads();
     await openLead(data.lead);
+  };
+
+  const updateAssignment = async (assignedUserId: number | null) => {
+    if (!selected || !['owner', 'admin', 'manager'].includes(crmUser?.role || '')) return;
+    const response = await apiFetch(`/api/leads/${selected.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: selected.status, source: selected.source, assignedUserId }),
+    });
+    if (!response.ok) {
+      setError('Não foi possível alterar o consultor responsável.');
+      return;
+    }
+    const data = await response.json() as { lead: CrmLead };
+    setSelected(data.lead);
+    setPendingAssignment(data.lead.assignedUserId);
+    await loadLeads();
   };
 
   const addNote = async (event: FormEvent<HTMLFormElement>) => {
@@ -1109,16 +1159,17 @@ function AdminPage() {
          </div>
         {error && <p role="alert" className="mb-5 rounded-lg border border-[#e4b1aa] bg-[#fff5f3] px-4 py-3 text-sm font-semibold text-[#9d4b43]">{error}</p>}
          {teamOpen && <div className="mb-6 rounded-2xl border border-[#d9e0e9] bg-white p-6 shadow-[0_12px_30px_rgba(32,47,77,.05)]">
-           <div className="flex items-start justify-between gap-4"><div><p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#58739f]">/ acesso corporativo</p><h2 className="mt-2 font-display text-2xl font-semibold">Equipe e permissões</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-[#56657d]">Crie a conta primeiro no Clerk. Depois cadastre o ID do usuário aqui para habilitar o acesso ao CRM. Senhas e recuperação continuam sob responsabilidade do Clerk.</p></div><button type="button" onClick={() => setTeamOpen(false)} aria-label="Fechar equipe" className="rounded-full border border-[#d9e0e9] p-2"><X className="h-4 w-4" /></button></div>
-           <form onSubmit={saveTeamUser} className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-             <input required placeholder="ID do usuário Clerk" value={newTeamUser.clerkUserId} onChange={(event) => setNewTeamUser({ ...newTeamUser, clerkUserId: event.target.value })} className="rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3 py-2.5 text-sm outline-none lg:col-span-2" />
-             <input required type="email" placeholder="E-mail" value={newTeamUser.email} onChange={(event) => setNewTeamUser({ ...newTeamUser, email: event.target.value })} className="rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3 py-2.5 text-sm outline-none" />
+           <div className="flex items-start justify-between gap-4"><div><p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#58739f]">/ acesso corporativo</p><h2 className="mt-2 font-display text-2xl font-semibold">Equipe e permissões</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-[#56657d]">Cadastre, altere ou retire pessoas da equipe diretamente pelo CRM. A senha e a recuperação de acesso continuam protegidas.</p></div><button type="button" onClick={() => setTeamOpen(false)} aria-label="Fechar equipe" className="rounded-full border border-[#d9e0e9] p-2"><X className="h-4 w-4" /></button></div>
+            {teamMessage && <p className="mt-5 rounded-lg border border-[#b8dddd] bg-[#eefafa] px-3 py-2 text-xs font-semibold text-[#276d70]">{teamMessage}</p>}
+            <form onSubmit={saveTeamUser} className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+             <input required type="email" placeholder="E-mail" value={newTeamUser.email} onChange={(event) => setNewTeamUser({ ...newTeamUser, email: event.target.value })} className="rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3 py-2.5 text-sm outline-none lg:col-span-2" />
              <input required placeholder="Nome" value={newTeamUser.name} onChange={(event) => setNewTeamUser({ ...newTeamUser, name: event.target.value })} className="rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3 py-2.5 text-sm outline-none" />
-             <div className="flex gap-2"><select value={newTeamUser.role} onChange={(event) => setNewTeamUser({ ...newTeamUser, role: event.target.value as CrmRole })} className="min-w-0 flex-1 rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3 py-2.5 text-sm outline-none">{Object.entries(CRM_ROLE_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select><button type="submit" className="rounded-lg bg-[#202f4d] px-4 py-2.5 text-xs font-extrabold text-white">Adicionar</button></div>
+             <div className="flex gap-2"><select value={newTeamUser.role} onChange={(event) => setNewTeamUser({ ...newTeamUser, role: event.target.value as CrmRole })} className="min-w-0 flex-1 rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3 py-2.5 text-sm outline-none">{manageableRoles.map((key) => <option key={key} value={key}>{CRM_ROLE_LABELS[key]}</option>)}</select><button type="submit" className="rounded-lg bg-[#202f4d] px-4 py-2.5 text-xs font-extrabold text-white">Adicionar</button></div>
            </form>
-           <div className="mt-6 divide-y divide-[#edf1f5]">{team.map((member) => <div key={member.clerkUserId} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-center gap-3"><span className={`flex h-9 w-9 items-center justify-center rounded-full ${member.active ? 'bg-[#eef8f8] text-[#587f82]' : 'bg-[#f5f7fa] text-[#9caac0]'}`}><Shield className="h-4 w-4" /></span><div><p className="text-sm font-bold">{member.name}</p><p className="text-xs text-[#7a8799]">{member.email} · {member.active ? 'Ativo' : 'Desativado'}</p></div></div><div className="flex gap-2"><select disabled={member.clerkUserId === crmUser?.clerkUserId} value={member.role} onChange={(event) => void updateTeamUser(member, { role: event.target.value as CrmRole })} className="rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3 py-2 text-xs font-bold">{Object.entries(CRM_ROLE_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select><button type="button" disabled={member.clerkUserId === crmUser?.clerkUserId} onClick={() => void updateTeamUser(member, { active: !Boolean(member.active) })} className="rounded-lg border border-[#c3d1df] px-3 py-2 text-xs font-bold">{member.active ? 'Desativar' : 'Ativar'}</button></div></div>)}</div>
+           <div className="mt-6 divide-y divide-[#edf1f5]">{team.map((member) => { const selectedRole = pendingRoles[member.id] || member.role; const roleChanged = selectedRole !== member.role; return <div key={member.id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-center gap-3"><span className={`flex h-9 w-9 items-center justify-center rounded-full ${member.active ? 'bg-[#eef8f8] text-[#587f82]' : 'bg-[#f5f7fa] text-[#9caac0]'}`}><Shield className="h-4 w-4" /></span><div><p className="text-sm font-bold">{member.name}</p><p className="text-xs text-[#7a8799]">{member.email} · {CRM_ROLE_LABELS[member.role] || member.role} · {member.active ? 'Ativo' : 'Desativado'}</p></div></div><div className="flex flex-wrap justify-end gap-2"><select disabled={member.id === crmUser?.id || !manageableRoles.includes(member.role)} value={selectedRole} onChange={(event) => setPendingRoles({ ...pendingRoles, [member.id]: event.target.value as CrmRole })} className="rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3 py-2 text-xs font-bold">{manageableRoles.includes(member.role) ? manageableRoles.map((key) => <option key={key} value={key}>{CRM_ROLE_LABELS[key]}</option>) : <option value={member.role}>{CRM_ROLE_LABELS[member.role] || member.role}</option>}</select>{roleChanged && <button type="button" onClick={() => void updateTeamUser(member, { role: selectedRole })} className="rounded-lg bg-[#202f4d] px-3 py-2 text-xs font-extrabold text-white">Salvar</button>}<button type="button" disabled={member.id === crmUser?.id || !manageableRoles.includes(member.role)} onClick={() => void updateTeamUser(member, { active: !Boolean(member.active) })} className="rounded-lg border border-[#c3d1df] px-3 py-2 text-xs font-bold">{member.active ? 'Desativar' : 'Ativar'}</button><button type="button" disabled={member.id === crmUser?.id || !manageableRoles.includes(member.role)} onClick={() => void deleteTeamUser(member)} className="rounded-lg border border-[#e4b1aa] px-3 py-2 text-xs font-bold text-[#9d4b43]">Excluir</button></div></div>})}</div>
          </div>}
-        <div className="grid gap-6 lg:grid-cols-[1fr_390px]">
+         {selected && ['owner', 'admin', 'manager'].includes(crmUser?.role || '') && <section className="mb-6 rounded-2xl border border-[#d9e0e9] bg-white p-5 shadow-[0_12px_30px_rgba(32,47,77,.05)]"><div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#58739f]">/ responsabilidade comercial</p><h2 className="mt-2 font-display text-xl font-semibold">Consultor responsável</h2><p className="mt-1 text-xs text-[#56657d]">Defina quem acompanha este lead. A alteração só será aplicada ao clicar em Salvar.</p></div><div className="flex w-full gap-2 sm:w-auto"><select value={pendingAssignment === undefined ? (selected.assignedUserId ?? '') : (pendingAssignment ?? '')} onChange={(event) => setPendingAssignment(event.target.value ? Number(event.target.value) : null)} className="min-w-0 flex-1 rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3 py-2.5 text-sm outline-none sm:w-64"><option value="">Sem consultor atribuído</option>{team.filter((member) => member.role === 'operator' && Boolean(member.active)).map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}</select>{(pendingAssignment !== undefined && pendingAssignment !== selected.assignedUserId) && <button type="button" onClick={() => void updateAssignment(pendingAssignment)} className="rounded-lg bg-[#202f4d] px-4 py-2.5 text-xs font-extrabold text-white">Salvar</button>}</div></div></section>}
+         <div className="grid gap-6 lg:grid-cols-[1fr_390px]">
           <section className="overflow-hidden rounded-2xl border border-[#d9e0e9] bg-white shadow-[0_12px_30px_rgba(32,47,77,.05)]">
             <div className="flex items-center justify-between border-b border-[#d9e0e9] px-5 py-4"><div><p className="font-display text-lg font-semibold tracking-[-.02em]">Leads recentes</p><p className="mt-1 text-xs text-[#7a8799]">Selecione uma oportunidade para ver o contexto.</p></div><span className="hidden rounded-full bg-[#eef8f8] px-3 py-1.5 font-mono-vg text-[9px] uppercase tracking-[.12em] text-[#587f82] sm:block">{leads.length} encontrados</span></div>
             <div className="flex flex-col gap-3 border-b border-[#d9e0e9] bg-[#fbfcfd] p-4 sm:flex-row">
