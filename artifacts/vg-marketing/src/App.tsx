@@ -24,7 +24,8 @@ import santaRitaLogoPath from '@assets/LOGO500X500_1787590811257.png';
 const queryClient = new QueryClient();
 const SITE_URL = import.meta.env.VITE_SITE_URL || 'https://vgconsultoriamkt.com.br';
 const SITE_NAME = 'VG Consultoria em Marketing';
-const API_BASE = import.meta.env.VITE_API_URL || '';
+const API_BASE = import.meta.env.VITE_API_URL
+  || (import.meta.env.PROD ? 'https://vgconsultoriamkt.onrender.com' : '');
 const clerkHostname = typeof window === 'undefined' ? 'vgconsultoriamkt.com.br' : window.location.hostname;
 const clerkPubKey = publishableKeyFromHost(clerkHostname, import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
@@ -2038,7 +2039,22 @@ export function PublicPage({ path }: { path: string }) {
   );
 }
 
-function App() {
+ function App() {
+  if (!clerkPubKey) {
+    return (
+      <main className="flex min-h-[100dvh] items-center justify-center bg-[#071c2a] px-5 text-center text-white">
+        <div className="max-w-md">
+          <LogoMark className="mx-auto mb-6 h-20 w-20" />
+          <p className="font-mono-vg text-[10px] uppercase tracking-[.2em] text-[#9fe4e5]">Acesso empresa</p>
+          <h1 className="mt-4 font-display text-3xl font-semibold">Login temporariamente indisponível</h1>
+          <p className="mt-4 text-sm leading-7 text-slate-300">
+            A autenticação ainda não foi configurada neste ambiente. Atualize a publicação e tente novamente.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <WouterRouter base={basePath}>
       <ClerkProvider

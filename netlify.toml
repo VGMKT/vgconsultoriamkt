@@ -18,9 +18,27 @@
   force = true
 
 [[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+  from = "/sobre"
+  to = "/sobre-a-vg/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/sobre/"
+  to = "/sobre-a-vg/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/login"
+  to = "/sign-in/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/login/"
+  to = "/sign-in/"
+  status = 301
 
 [[headers]]
   for = "/*"

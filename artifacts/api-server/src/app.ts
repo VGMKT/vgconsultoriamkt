@@ -59,7 +59,7 @@ app.use("/api", (req, res, next) => {
   const isMutation = typeof requestMethod === "string"
     && ["POST", "PUT", "PATCH", "DELETE"].includes(requestMethod);
   const origin = req.headers.origin;
-  if (isMutation && origin && !allowedOrigins.includes(origin)) {
+  if (isMutation && (!origin || !allowedOrigins.includes(origin))) {
     res.status(403).json({ error: "Origin not allowed." });
     return;
   }

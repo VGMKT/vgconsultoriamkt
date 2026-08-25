@@ -16,6 +16,11 @@ Configure no ambiente do Netlify:
 - `VITE_CLERK_PUBLISHABLE_KEY`: chave pública do ambiente de produção do Clerk
 - `VITE_CLERK_PROXY_URL`: valor de proxy preenchido pelo ambiente de publicação do Clerk, quando aplicável
 
+As variáveis `VITE_CLERK_PUBLISHABLE_KEY` e `VITE_CLERK_PROXY_URL` precisam estar
+disponíveis durante o build do Netlify, não apenas no ambiente local do Replit.
+Depois de cadastrar ou atualizar essas variáveis, faça um novo deploy para que
+elas sejam incorporadas ao bundle estático.
+
 ## API e banco
 
 O Netlify hospeda o frontend estático. O `api-server` Express e o PostgreSQL devem continuar em um ambiente de backend separado, como o deployment da API neste workspace ou outro servidor Node.

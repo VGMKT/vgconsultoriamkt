@@ -6,12 +6,42 @@ interface Props {
   description: string;
   path: string;
   schema?: Record<string, unknown>;
+  indexable?: boolean;
 }
 
-const { title, description, path, schema } = Astro.props;
+const { title, description, path, schema, indexable = true } = Astro.props;
 const fullTitle = `${title} | VG Marketing`;
 const canonical = `https://vgconsultoriamkt.com.br${path === '/' ? '/' : path}`;
 const socialImage = 'https://vgconsultoriamkt.com.br/og-image.png';
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'LocalBusiness',
+      '@id': 'https://vgconsultoriamkt.com.br/#business',
+      name: 'VG Consultoria em Marketing',
+      url: 'https://vgconsultoriamkt.com.br/',
+      logo: socialImage,
+      image: socialImage,
+      description: 'Consultoria de marketing em Fortaleza para empresas que buscam clareza, estratégia e crescimento.',
+      areaServed: [
+        { '@type': 'City', name: 'Fortaleza' },
+        { '@type': 'AdministrativeArea', name: 'Ceará' },
+        { '@type': 'Country', name: 'Brasil' },
+      ],
+      priceRange: '$$',
+    },
+    {
+      '@type': 'WebSite',
+      '@id': 'https://vgconsultoriamkt.com.br/#website',
+      url: 'https://vgconsultoriamkt.com.br/',
+      name: 'VG Consultoria em Marketing',
+      publisher: { '@id': 'https://vgconsultoriamkt.com.br/#business' },
+      inLanguage: 'pt-BR',
+    },
+    ...(schema ? [schema] : []),
+  ],
+};
 ---
 
 <!doctype html>
@@ -23,6 +53,7 @@ const socialImage = 'https://vgconsultoriamkt.com.br/og-image.png';
     <meta name="description" content={description} />
     <meta name="author" content="VG Consultoria em Marketing" />
     <meta name="theme-color" content="#202f4d" />
+    {indexable ? <meta name="robots" content="index,follow" /> : <meta name="robots" content="noindex,nofollow" />}
     <link rel="canonical" href={canonical} />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/favicon.png" />
@@ -44,7 +75,7 @@ const socialImage = 'https://vgconsultoriamkt.com.br/og-image.png';
     <meta name="twitter:url" content={canonical} />
     <meta name="twitter:image" content={socialImage} />
     <meta name="twitter:image:alt" content="Logo da VG Consultoria em Marketing" />
-    {schema && <script type="application/ld+json" set:html={JSON.stringify(schema)} />}
+    {indexable && <script type="application/ld+json" set:html={JSON.stringify(structuredData)} />}
   </head>
   <body>
     <slot />
