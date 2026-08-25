@@ -32,7 +32,8 @@ const configuredClerkPubKey = import.meta.env.PUBLIC_CLERK_PUBLISHABLE_KEY
 const clerkPubKey = configuredClerkPubKey
   ? publishableKeyFromHost(clerkHostname, configuredClerkPubKey)
   : undefined;
-const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
+const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL
+  || (import.meta.env.PROD ? 'https://vgconsultoriamkt.onrender.com/api/__clerk' : undefined);
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
 const browserOrigin = typeof window === 'undefined' ? SITE_URL : window.location.origin;
 

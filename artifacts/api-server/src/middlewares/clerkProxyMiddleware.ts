@@ -76,7 +76,7 @@ export function clerkProxyMiddleware(): RequestHandler {
         const protocol = req.headers['x-forwarded-proto'] || 'https';
         const host = getClerkProxyHost(req) || '';
           const publicProxyUrl = process.env.CLERK_PROXY_PUBLIC_URL?.trim()
-            || 'https://vgconsultoriamkt.com.br/api/__clerk';
+            || 'https://vgconsultoriamkt.onrender.com/api/__clerk';
           const proxyUrl = publicProxyUrl || `${protocol}://${host}${CLERK_PROXY_PATH}`;
 
         proxyReq.setHeader('Clerk-Proxy-Url', proxyUrl);
