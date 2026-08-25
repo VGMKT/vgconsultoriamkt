@@ -885,6 +885,7 @@ function SignInPage() {
 function AdminPage() {
   const { signOut } = useClerk();
   const { user } = useUser();
+  const { getToken } = useAuth();
   const [leads, setLeads] = useState<CrmLead[]>([]);
   const [selected, setSelected] = useState<CrmLead | null>(null);
   const [notes, setNotes] = useState<CrmNote[]>([]);
@@ -900,6 +901,17 @@ function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const apiFetch = async (path: string, init: RequestInit = {}) => {
+    const token = await getToken();
+    const headers = new Headers(init.headers);
+    if (token) headers.set('Authorization', `Bearer ${token}`);
+    return fetch(`${API_BASE}${path}`, {
+      ...init,
+      headers,
+      credentials: 'include',
+    });
+  };
+
   const loadLeads = async () => {
     setLoading(true);
     try {
@@ -908,8 +920,8 @@ function AdminPage() {
       if (status) query.set('status', status);
       if (source) query.set('source', source);
       const [leadsResponse, summaryResponse] = await Promise.all([
-        fetch(`${API_BASE}/api/leads?${query.toString()}`, { credentials: 'include' }),
-        fetch(`${API_BASE}/api/leads/summary`, { credentials: 'include' }),
+        apiFetch(`/api/leads?${query.toString()}`),
+        apiFetch('/api/leads/summary'),
       ]);
       if (!leadsResponse.ok || !summaryResponse.ok) throw new Error('load-failed');
       const leadsData = await leadsResponse.json() as { leads: CrmLead[] };
@@ -931,7 +943,7 @@ function AdminPage() {
   const openLead = async (lead: CrmLead) => {
     setSelected(lead);
     try {
-      const response = await fetch(`${API_BASE}/api/leads/${lead.id}`, { credentials: 'include' });
+      const response = await apiFetch(`/api/leads/${lead.id}`);
       if (!response.ok) throw new Error('detail-failed');
       const data = await response.json() as { lead: CrmLead; notes: CrmNote[]; activities: CrmActivity[] };
       setSelected(data.lead);
@@ -944,10 +956,9 @@ function AdminPage() {
 
   const updateStatus = async (nextStatus: string, nextSource = selected?.source) => {
     if (!selected) return;
-    const response = await fetch(`${API_BASE}/api/leads/${selected.id}`, {
+    const response = await apiFetch(`/api/leads/${selected.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
       body: JSON.stringify({ status: nextStatus, source: nextSource }),
     });
     if (!response.ok) {
@@ -963,10 +974,9 @@ function AdminPage() {
   const addNote = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!selected || !note.trim()) return;
-    const response = await fetch(`${API_BASE}/api/leads/${selected.id}/notes`, {
+    const response = await apiFetch(`/api/leads/${selected.id}/notes`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
       body: JSON.stringify({ body: note.trim() }),
     });
     if (!response.ok) {
@@ -981,10 +991,9 @@ function AdminPage() {
     event.preventDefault();
     setSavingLead(true);
     try {
-      const response = await fetch(`${API_BASE}/api/leads/manual`, {
+      const response = await apiFetch('/api/leads/manual', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({
           ...manualLead,
           company: manualLead.company || null,
