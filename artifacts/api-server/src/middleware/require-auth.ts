@@ -10,6 +10,26 @@ export type AuthenticatedRequest = Request & {
   crmUser?: typeof crmUsersTable.$inferSelect;
 };
 
+type ClerkUserProfile = {
+  first_name?: string | null;
+  username?: string | null;
+  primary_email_address_id?: string | null;
+  email_addresses?: Array<{ id?: string; email_address?: string }>;
+};
+
+async function getClerkUserProfile(userId: string): Promise<ClerkUserProfile | null> {
+  const secretKey = process.env.CLERK_SECRET_KEY;
+  if (!secretKey) return null;
+  const response = await fetch(`https://api.clerk.com/v1/users/${encodeURIComponent(userId)}`, {
+    headers: { Authorization: `Bearer ${secretKey}` },
+  });
+  if (!response.ok) {
+    logger.warn({ event: 'auth.profile_lookup_failed', userId, status: response.status }, 'Could not load Clerk user profile');
+    return null;
+  }
+  return await response.json() as ClerkUserProfile;
+}
+
 export function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   const auth = getAuth(req);
   const userId = auth?.userId;
@@ -32,10 +52,10 @@ export async function requireCrmUser(req: AuthenticatedRequest, res: Response, n
     try {
       const auth = getAuth(req);
       const claims = auth?.sessionClaims as Record<string, unknown> | undefined;
-      const email = typeof claims?.email === 'string'
+      let email = typeof claims?.email === 'string'
         ? claims.email
         : typeof claims?.email_address === 'string' ? claims.email_address : undefined;
-      const name = typeof claims?.name === 'string'
+      let name = typeof claims?.name === 'string'
         ? claims.name
         : typeof claims?.first_name === 'string' ? claims.first_name : 'Usuário do CRM';
       const [existing] = await db.select().from(crmUsersTable).where(
@@ -43,6 +63,16 @@ export async function requireCrmUser(req: AuthenticatedRequest, res: Response, n
           ? eq(crmUsersTable.clerkUserId, req.userId!)
           : eq(crmUsersTable.clerkUserId, req.userId!)),
       );
+      if (!existing && (!email || name === 'Usuário do CRM')) {
+        const clerkUser = await getClerkUserProfile(req.userId!);
+        const primaryEmail = clerkUser?.email_addresses?.find(
+          (address) => address.id === clerkUser.primary_email_address_id,
+        )?.email_address || clerkUser?.email_addresses?.[0]?.email_address;
+        email = email || primaryEmail;
+        name = name !== 'Usuário do CRM'
+          ? name
+          : clerkUser?.first_name || clerkUser?.username || primaryEmail || name;
+      }
       const [emailMatch] = !existing && email
         ? await db.select().from(crmUsersTable).where(and(isNull(crmUsersTable.deletedAt), eq(crmUsersTable.email, email)))
         : [];
