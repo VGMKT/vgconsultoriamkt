@@ -27,7 +27,8 @@ const SITE_NAME = 'VG Consultoria em Marketing';
 const API_BASE = import.meta.env.VITE_API_URL
   || (import.meta.env.PROD ? 'https://vgconsultoriamkt.onrender.com' : '');
 const clerkHostname = typeof window === 'undefined' ? 'vgconsultoriamkt.com.br' : window.location.hostname;
-const configuredClerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+const configuredClerkPubKey = import.meta.env.PUBLIC_CLERK_PUBLISHABLE_KEY
+  || import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkPubKey = configuredClerkPubKey
   ? publishableKeyFromHost(clerkHostname, configuredClerkPubKey)
   : undefined;
