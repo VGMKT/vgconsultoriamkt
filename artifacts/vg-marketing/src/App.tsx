@@ -422,6 +422,7 @@ function usePageMeta(title: string, description: string) {
     document.title = fullTitle;
     const path = window.location.pathname.replace(/\/+$/, '') || '/';
     const canonicalUrl = `${SITE_URL}${path === '/' ? '/' : path}`;
+    const socialImageUrl = `${SITE_URL}/og-image.png`;
     upsertMeta('name', 'description', description);
     upsertMeta('name', 'author', SITE_NAME);
     upsertMeta('name', 'theme-color', '#202f4d');
@@ -431,10 +432,18 @@ function usePageMeta(title: string, description: string) {
     upsertMeta('property', 'og:type', 'website');
     upsertMeta('property', 'og:locale', 'pt_BR');
     upsertMeta('property', 'og:site_name', SITE_NAME);
+    upsertMeta('property', 'og:image', socialImageUrl);
+    upsertMeta('property', 'og:image:secure_url', socialImageUrl);
+    upsertMeta('property', 'og:image:type', 'image/png');
+    upsertMeta('property', 'og:image:width', '800');
+    upsertMeta('property', 'og:image:height', '800');
+    upsertMeta('property', 'og:image:alt', 'Logo da VG Consultoria em Marketing');
     upsertMeta('name', 'twitter:card', 'summary_large_image');
     upsertMeta('name', 'twitter:title', fullTitle);
     upsertMeta('name', 'twitter:description', description);
     upsertMeta('name', 'twitter:url', canonicalUrl);
+    upsertMeta('name', 'twitter:image', socialImageUrl);
+    upsertMeta('name', 'twitter:image:alt', 'Logo da VG Consultoria em Marketing');
     let canonical = document.querySelector('link[rel="canonical"]');
     if (!canonical) {
       canonical = document.createElement('link');
@@ -1089,7 +1098,10 @@ function DarkSectionHeading({ eyebrow, title, light = false }: { eyebrow: string
 }
 
 function Home() {
-  usePageMeta('Consultoria de Marketing para Empresas', 'Consultoria de marketing para empresas que querem crescer com clareza, estrutura e autonomia. Conheça a VG Marketing.');
+  usePageMeta(
+    'Consultoria de Marketing em Fortaleza',
+    'Consultoria de marketing em Fortaleza para empresas que buscam clareza, estratégia e crescimento. Marca, tráfego, processos e pessoas trabalhando juntos.',
+  );
   const vgSystem = [
     { number: '01', label: 'Demanda', title: 'Atrair o que faz sentido.', text: 'Criamos movimento comercial com posicionamento, mídia e conteúdo orientados ao negócio.', tone: 'bg-[#c88982]', textTone: 'text-[#202f4d]' },
     { number: '02', label: 'Sistemas', title: 'Conectar as ferramentas.', text: 'Organizamos site, CRM, dados e canais para o marketing não depender de improviso.', tone: 'bg-[#d7bd91]', textTone: 'text-[#202f4d]' },
