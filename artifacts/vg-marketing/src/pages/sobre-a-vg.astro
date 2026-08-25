@@ -1,0 +1,11 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+import { PublicPage } from '../App';
+---
+<SiteLayout
+  title="Sobre a VG Consultoria em Marketing"
+  description="Conheça a VG Consultoria em Marketing, parceira estratégica de empresas que buscam crescimento com clareza, estrutura e autonomia."
+  path="/sobre-a-vg"
+>
+  <PublicPage path="/sobre-a-vg" client:load />
+</SiteLayout>

@@ -1,0 +1,7 @@
+---
+import { default as App } from '../App';
+import SiteLayout from '../layouts/SiteLayout.astro';
+---
+<SiteLayout title="Acesso empresa" description="Acesso restrito ao CRM de Marketing da VG Consultoria." path="/login">
+  <App client:only="react" />
+</SiteLayout>

@@ -1,0 +1,11 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+import { PublicPage } from '../App';
+---
+<SiteLayout
+  title="Consultoria de Marketing em Fortaleza"
+  description="Consultoria de marketing em Fortaleza para empresas que buscam clareza, estratégia e crescimento. Marca, tráfego, processos e pessoas trabalhando juntos."
+  path="/"
+>
+  <PublicPage path="/" client:load />
+</SiteLayout>

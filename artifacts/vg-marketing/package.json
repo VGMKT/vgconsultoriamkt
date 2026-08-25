@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --config vite.config.ts --host 0.0.0.0",
-    "build": "vite build --config vite.config.ts",
-    "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
+    "dev": "ASTRO_DEV_BACKGROUND=0 astro dev --host 0.0.0.0 --port $PORT",
+    "build": "astro build",
+    "serve": "astro preview --host 0.0.0.0 --port $PORT",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
@@ -75,7 +75,9 @@
     "zod": "catalog:"
   },
   "dependencies": {
+    "@astrojs/react": "^6.0.4",
     "@clerk/react": "^6.14.5",
-    "@clerk/themes": "^2.4.57"
+    "@clerk/themes": "^2.4.57",
+    "astro": "^7.2.4"
   }
 }

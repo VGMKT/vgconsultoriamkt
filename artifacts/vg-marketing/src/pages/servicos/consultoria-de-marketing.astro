@@ -1,0 +1,11 @@
+---
+import SiteLayout from '../../layouts/SiteLayout.astro';
+import { PublicPage } from '../../App';
+---
+<SiteLayout
+  title="Consultoria de Marketing"
+  description="Estratégia, processos, indicadores e direção para transformar o marketing da sua empresa em uma operação mais clara e consistente."
+  path="/servicos/consultoria-de-marketing"
+>
+  <PublicPage path="/servicos/consultoria-de-marketing" client:load />
+</SiteLayout>

@@ -2,6 +2,11 @@
 
 # compiled output
 dist
+.astro
+# Environment files and credentials
+.env
+.env.*
+!.env.example
 tmp
 out-tsc
 *.tsbuildinfo

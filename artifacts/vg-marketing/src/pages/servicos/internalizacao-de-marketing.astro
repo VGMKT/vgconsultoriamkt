@@ -1,0 +1,11 @@
+---
+import SiteLayout from '../../layouts/SiteLayout.astro';
+import { PublicPage } from '../../App';
+---
+<SiteLayout
+  title="Internalização de Marketing | Consultoria VG"
+  description="Estruture um time de marketing próprio com processos, direção e capacidade para executar melhor."
+  path="/servicos/internalizacao-de-marketing"
+>
+  <PublicPage path="/servicos/internalizacao-de-marketing" client:load />
+</SiteLayout>

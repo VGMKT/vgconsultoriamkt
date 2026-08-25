@@ -6,6 +6,28 @@
   BASE_PATH = "/"
 
 [[redirects]]
+  from = "http://vgconsultoriamkt.com.br/*"
+  to = "https://vgconsultoriamkt.com.br/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "http://www.vgconsultoriamkt.com.br/*"
+  to = "https://vgconsultoriamkt.com.br/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests; script-src 'self' 'unsafe-inline' https://*.clerk.com https://*.clerk.accounts.dev https://*.clerk.dev; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://vgconsultoriamkt.onrender.com https://*.clerk.com https://*.clerk.accounts.dev https://*.clerk.dev; frame-src 'self' https://*.clerk.com https://*.clerk.accounts.dev https://*.clerk.dev; manifest-src 'self';"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"

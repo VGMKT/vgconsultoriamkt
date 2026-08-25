@@ -9,7 +9,7 @@ import { shadcn } from '@clerk/themes';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import NotFound from '@/pages/not-found';
+import NotFound from '@/components/not-found';
 import logoPath from '@assets/LOGO_VG_MARKETING_1787577364878.png';
 import loginLogoPath from '@assets/LOGO_VG_MARKETING_1787595132276.png';
 import latestLoginLogoPath from '@assets/LOGO_REDONDO_1787597368452.png';
@@ -25,9 +25,25 @@ const queryClient = new QueryClient();
 const SITE_URL = import.meta.env.VITE_SITE_URL || 'https://vgconsultoriamkt.com.br';
 const SITE_NAME = 'VG Consultoria em Marketing';
 const API_BASE = import.meta.env.VITE_API_URL || '';
-const clerkPubKey = publishableKeyFromHost(window.location.hostname, import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
+const clerkHostname = typeof window === 'undefined' ? 'vgconsultoriamkt.com.br' : window.location.hostname;
+const clerkPubKey = publishableKeyFromHost(clerkHostname, import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+const browserOrigin = typeof window === 'undefined' ? SITE_URL : window.location.origin;
+
+function assetUrl(asset: unknown): string {
+  if (typeof asset === 'string') return asset;
+  if (asset && typeof asset === 'object' && 'src' in asset && typeof asset.src === 'string') return asset.src;
+  return '';
+}
+
+function hasStrongPassword(password: string): boolean {
+  return password.length >= 12
+    && /[a-z]/.test(password)
+    && /[A-Z]/.test(password)
+    && /\d/.test(password)
+    && /[^A-Za-z0-9]/.test(password);
+}
 
 function stripBase(path: string) {
   return basePath && path.startsWith(basePath) ? path.slice(basePath.length) || '/' : path;
@@ -39,7 +55,7 @@ const clerkAppearance = {
   options: {
     logoPlacement: 'inside' as const,
     logoLinkUrl: basePath || '/',
-    logoImageUrl: `${window.location.origin}${basePath}/logo.svg`,
+    logoImageUrl: `${browserOrigin}${basePath}/logo.svg`,
   },
   variables: {
     colorPrimary: '#9fe4e5',
@@ -479,7 +495,7 @@ function Header({ onLight = false }: { onLight?: boolean }) {
     <header className="absolute left-0 right-0 top-0 z-40">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 lg:px-10 lg:py-7">
         <Link href="/" className="group flex items-center gap-3" data-testid="link-brand">
-          <img src={logoPath} alt="VG Consultoria em Marketing" width="44" height="44" fetchPriority="high" decoding="async" className="h-11 w-11 rounded-xl object-cover shadow-[0_6px_16px_rgba(0,0,0,.15)] transition-transform duration-300 group-hover:rotate-3 group-hover:scale-105" />
+          <img src={assetUrl(logoPath)} alt="VG Consultoria em Marketing" width="44" height="44" fetchPriority="high" decoding="async" className="h-11 w-11 rounded-xl object-cover shadow-[0_6px_16px_rgba(0,0,0,.15)] transition-transform duration-300 group-hover:rotate-3 group-hover:scale-105" />
           <span className={`hidden max-w-[190px] text-[10px] font-extrabold uppercase leading-[1.15] tracking-[.16em] sm:block ${onLight ? 'text-[#202f4d]' : 'text-white'}`}>VG CONSULTORIA<br />EM MARKETING</span>
         </Link>
         <nav className="hidden items-center gap-8 md:flex" aria-label="Navegação principal">
@@ -556,7 +572,7 @@ function Footer() {
       <div className="mx-auto grid max-w-7xl gap-12 px-5 py-16 lg:grid-cols-[1.4fr_.7fr_.7fr] lg:px-10 lg:py-20">
         <div>
           <div className="mb-6 flex items-center gap-3">
-            <img src={logoPath} alt="VG Consultoria em Marketing" width="48" height="48" loading="lazy" decoding="async" className="h-12 w-12 rounded-xl object-cover" />
+            <img src={assetUrl(logoPath)} alt="VG Consultoria em Marketing" width="48" height="48" loading="lazy" decoding="async" className="h-12 w-12 rounded-xl object-cover" />
             <span className="text-[10px] font-extrabold uppercase leading-[1.15] tracking-[.16em] text-white">VG CONSULTORIA<br />EM MARKETING</span>
           </div>
           <p className="max-w-sm text-sm leading-7 text-slate-400">Clareza para decidir. Estrutura para executar. Marketing para crescer com consistência.</p>
@@ -625,6 +641,7 @@ const CRM_SOURCE_OPTIONS = Object.entries(CRM_SOURCE_LABELS);
 type CrmSource = keyof typeof CRM_SOURCE_LABELS;
 
 function detectLeadSource(): CrmSource {
+  if (typeof window === 'undefined') return 'site';
   const params = new URLSearchParams(window.location.search);
   const utmSource = (params.get('utm_source') || '').toLowerCase();
   const medium = (params.get('utm_medium') || '').toLowerCase();
@@ -805,6 +822,10 @@ function SignInPage() {
         setMode('reset-password');
           setMessage('Código validado. Defina sua nova senha.');
       } else {
+        if (!hasStrongPassword(newPassword)) {
+          setError('A nova senha deve ter pelo menos 12 caracteres, incluindo maiúscula, minúscula, número e símbolo.');
+          return;
+        }
         const result = await signIn.resetPassword({ password: newPassword });
         if (result.status === 'complete' && result.createdSessionId) {
           await setActive({ session: result.createdSessionId });
@@ -858,7 +879,7 @@ function SignInPage() {
       <div className="w-full max-w-[390px]">
         <div className="relative mx-auto w-full max-w-[360px] pt-16">
           <Link href="/" className="absolute left-1/2 top-0 z-10 flex h-28 w-28 -translate-x-1/2 items-center justify-center overflow-hidden rounded-full border-[0.25px] border-white bg-white p-0.5 shadow-[0_12px_28px_rgba(0,0,0,.3)]" data-testid="link-login-logo">
-            <img src={latestLoginLogoPath} alt="Logo VG" width="112" height="112" className="h-full w-full object-contain" />
+            <img src={assetUrl(latestLoginLogoPath)} alt="Logo VG" width="112" height="112" className="h-full w-full object-contain" />
           </Link>
           <form onSubmit={submit} className="flex aspect-square flex-col justify-start rounded-full bg-[#f5f7fa] px-8 pb-8 pt-20 shadow-[0_20px_60px_rgba(0,0,0,.2)] ring-1 ring-white/35 ring-offset-8 ring-offset-[#061a36] sm:px-10">
           <div className="mb-4 text-center">
@@ -869,7 +890,7 @@ function SignInPage() {
           {mode === 'login' && <><label htmlFor="login-email" className="text-xs font-bold text-[#202f4d]">E-mail</label><input id="login-email" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} className="mt-1.5 w-full rounded-lg border border-[#c3d1df] bg-white px-3 py-2 text-sm text-[#202f4d] outline-none focus:border-[#9fe4e5]" /><label htmlFor="login-password" className="mt-3 block text-xs font-bold text-[#202f4d]">Senha</label><input id="login-password" type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} className="mt-1.5 w-full rounded-lg border border-[#c3d1df] bg-white px-3 py-2 text-sm text-[#202f4d] outline-none focus:border-[#9fe4e5]" /></>}
            {mode === 'client-trust-code' && <><label htmlFor="client-trust-code" className="text-xs font-bold text-[#202f4d]">Código de confirmação</label><input id="client-trust-code" inputMode="numeric" autoComplete="one-time-code" required value={code} onChange={(event) => setCode(event.target.value)} placeholder="Digite o código" className="mt-1.5 w-full rounded-lg border border-[#c3d1df] bg-white px-3.5 py-2.5 text-sm text-[#202f4d] outline-none focus:border-[#9fe4e5]" /></>}
            {mode === 'reset-code' && <><label htmlFor="reset-code" className="text-xs font-bold text-[#202f4d]">Código de recuperação</label><input id="reset-code" inputMode="numeric" autoComplete="one-time-code" required value={code} onChange={(event) => setCode(event.target.value)} placeholder="Digite o código" className="mt-1.5 w-full rounded-lg border border-[#c3d1df] bg-white px-3.5 py-2.5 text-sm text-[#202f4d] outline-none focus:border-[#9fe4e5]" /></>}
-          {mode === 'reset-password' && <><label htmlFor="new-password" className="text-xs font-bold text-[#202f4d]">Nova senha</label><input id="new-password" type="password" autoComplete="new-password" required minLength={8} value={newPassword} onChange={(event) => setNewPassword(event.target.value)} placeholder="Mínimo de 8 caracteres" className="mt-1.5 w-full rounded-lg border border-[#c3d1df] bg-white px-3.5 py-2.5 text-sm text-[#202f4d] outline-none focus:border-[#9fe4e5]" /></>}
+           {mode === 'reset-password' && <><label htmlFor="new-password" className="text-xs font-bold text-[#202f4d]">Nova senha</label><input id="new-password" type="password" autoComplete="new-password" required minLength={12} pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}" title="Use pelo menos 12 caracteres, com maiúscula, minúscula, número e símbolo." value={newPassword} onChange={(event) => setNewPassword(event.target.value)} placeholder="12+ caracteres, maiúscula, número e símbolo" className="mt-1.5 w-full rounded-lg border border-[#c3d1df] bg-white px-3.5 py-2.5 text-sm text-[#202f4d] outline-none focus:border-[#9fe4e5]" /></>}
           {error && <p role="alert" className="mt-4 rounded-lg border border-[#e4b1aa] bg-[#fff5f3] px-3 py-2 text-xs leading-5 text-[#9d4b43]">{error}</p>}
           {message && <p className="mt-4 rounded-lg border border-[#b8dddd] bg-[#eefafa] px-3 py-2 text-xs leading-5 text-[#276d70]">{message}</p>}
            {mode === 'login' ? <div className="mt-4 flex items-center justify-center gap-5"><button type="submit" disabled={loading || !isLoaded} className="rounded-lg bg-[#202f4d] px-4 py-2.5 text-xs font-extrabold text-white transition-colors hover:bg-[#58739f] disabled:cursor-wait disabled:opacity-60">{loading ? 'Aguarde...' : 'Entrar'}</button><button type="button" onClick={() => void recoverPassword()} className="text-right text-[11px] font-bold text-[#58739f] hover:text-[#202f4d]">Recuperar senha</button></div> : <button type="submit" disabled={loading || !isLoaded} className="mt-4 w-full rounded-lg bg-[#202f4d] px-4 py-3 text-sm font-extrabold text-white transition-colors hover:bg-[#58739f] disabled:cursor-wait disabled:opacity-60">{loading ? 'Aguarde...' : mode === 'client-trust-code' || mode === 'reset-code' ? 'Validar código' : 'Salvar nova senha'}</button>}
@@ -1021,7 +1042,7 @@ function AdminPage() {
       <header className="bg-[#061a36] text-white shadow-[0_10px_35px_rgba(6,26,54,.16)]">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 lg:px-10">
           <Link href="/admin" className="flex items-center gap-3" data-testid="link-crm-brand">
-            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white p-0.5 shadow-[0_0_0_1px_rgba(255,255,255,.25)]"><img src={crmLogoPath} alt="Logo VG" width="44" height="44" className="h-full w-full rounded-full object-contain" /></span>
+            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white p-0.5 shadow-[0_0_0_1px_rgba(255,255,255,.25)]"><img src={assetUrl(crmLogoPath)} alt="Logo VG" width="44" height="44" className="h-full w-full rounded-full object-contain" /></span>
             <div><p className="font-display text-lg font-bold tracking-[-.02em]">CRM de Marketing</p></div>
           </Link>
           <div className="flex items-center gap-3">
@@ -1897,7 +1918,7 @@ function CasesPage() {
                 <div className="relative">
                   {item.logo ? (
                     <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-[#17302f]/15 bg-[#102525] p-2 shadow-sm">
-                      <img src={item.logo} alt={`Logo da empresa ${item.client}`} width="80" height="80" loading="lazy" decoding="async" className="h-full w-full object-contain" />
+                      <img src={assetUrl(item.logo)} alt={`Logo da empresa ${item.client}`} width="80" height="80" loading="lazy" decoding="async" className="h-full w-full object-contain" />
                     </div>
                   ) : (
                     <div className={`flex h-12 w-12 items-center justify-center rounded-full font-display text-sm font-bold ${item.tone} ${item.tone === 'bg-[#202f4d]' ? 'text-[#b8d9da]' : 'text-[#202f4d]'}`}>{item.mark}</div>
@@ -2004,6 +2025,16 @@ function Router() {
         <Route component={NotFound} />
       </Switch>
     </ErrorBoundary>
+  );
+}
+
+export function PublicPage({ path }: { path: string }) {
+  return (
+    <WouterRouter base={basePath} ssrPath={path}>
+      <ErrorBoundary>
+        <Router />
+      </ErrorBoundary>
+    </WouterRouter>
   );
 }
 

@@ -1,0 +1,11 @@
+---
+import SiteLayout from '../../layouts/SiteLayout.astro';
+import { PublicPage } from '../../App';
+---
+<SiteLayout
+  title="Branding | Consultoria VG"
+  description="Posicionamento, identidade e direção de marca para empresas que precisam ser percebidas com mais clareza."
+  path="/servicos/branding"
+>
+  <PublicPage path="/servicos/branding" client:load />
+</SiteLayout>
