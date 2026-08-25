@@ -23,6 +23,52 @@ function canManageRole(actorRole: string | undefined, targetRole: string) {
   return false;
 }
 
+type ClerkInvitation = {
+  id?: string;
+  email_address?: string;
+  status?: string;
+};
+
+async function revokePendingClerkInvitations(email: string) {
+  const secretKey = process.env.CLERK_SECRET_KEY;
+  if (!secretKey) {
+    throw new Error('CLERK_SECRET_KEY is not configured');
+  }
+
+  const url = new URL('https://api.clerk.com/v1/invitations');
+  url.searchParams.set('query', email);
+  url.searchParams.set('status', 'pending');
+  const listResponse = await fetch(url, {
+    headers: { Authorization: `Bearer ${secretKey}` },
+  });
+  if (!listResponse.ok) {
+    throw new Error(`Clerk invitation lookup failed with status ${listResponse.status}`);
+  }
+
+  const payload = await listResponse.json().catch(() => null) as
+    | { data?: ClerkInvitation[] }
+    | ClerkInvitation[]
+    | null;
+  const invitations = Array.isArray(payload) ? payload : payload?.data || [];
+  const matchingInvitations = invitations.filter((invitation) =>
+    invitation.id
+    && invitation.email_address?.toLowerCase() === email.toLowerCase()
+    && (!invitation.status || invitation.status === 'pending'),
+  );
+
+  await Promise.all(matchingInvitations.map(async (invitation) => {
+    const revokeResponse = await fetch(`https://api.clerk.com/v1/invitations/${invitation.id}/revoke`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${secretKey}` },
+    });
+    if (!revokeResponse.ok && revokeResponse.status !== 404) {
+      throw new Error(`Clerk invitation revoke failed with status ${revokeResponse.status}`);
+    }
+  }));
+
+  return matchingInvitations.length;
+}
+
 router.use('/users', requireCrmUser);
 
 router.get('/users/me', (req: AuthenticatedRequest, res) => {
@@ -76,6 +122,7 @@ router.post('/users', requireRole('owner', 'admin'), async (req: AuthenticatedRe
       res.status(409).json({ error: 'Este e-mail já está cadastrado no CRM.' });
       return;
     }
+    await revokePendingClerkInvitations(parsed.data.email);
     const origin = typeof req.headers.origin === 'string' && req.headers.origin.startsWith('https://')
       ? req.headers.origin
       : 'https://vgconsultoriamkt.com.br';
@@ -159,6 +206,7 @@ router.delete('/users/:id', requireRole('owner', 'admin'), async (req: Authentic
       res.status(403).json({ error: 'Seu papel não pode excluir este usuário.' });
       return;
     }
+    const revokedInvitations = await revokePendingClerkInvitations(currentUser.email);
     const [user] = await db.update(crmUsersTable)
       .set({ active: 0, deletedAt: new Date(), updatedAt: new Date() })
       .where(eq(crmUsersTable.id, id))
@@ -167,7 +215,7 @@ router.delete('/users/:id', requireRole('owner', 'admin'), async (req: Authentic
       res.status(404).json({ error: 'Usuário não encontrado.' });
       return;
     }
-    res.json({ user });
+    res.json({ user, revokedInvitations });
   } catch (error) {
     next(error);
   }
