@@ -2,7 +2,7 @@ import { Router, type IRouter } from 'express';
 import { and, desc, eq, ilike, or, sql } from 'drizzle-orm';
 import { db } from '@workspace/db';
 import { leadActivitiesTable, leadNotesTable, leadsTable, leadSources, leadStatuses, type LeadSource, type LeadStatus } from '@workspace/db/schema';
-import { requireAuth, type AuthenticatedRequest } from '../middleware/require-auth';
+import { requireCrmUser, requireRole, type AuthenticatedRequest } from '../middleware/require-auth';
 import { logger } from '../lib/logger';
 import { z } from 'zod';
 
@@ -96,9 +96,9 @@ router.post('/leads', async (req, res, next) => {
   }
 });
 
-router.use('/leads', requireAuth);
+router.use('/leads', requireCrmUser);
 
-router.post('/leads/manual', async (req: AuthenticatedRequest, res, next) => {
+router.post('/leads/manual', requireRole('owner', 'admin', 'manager', 'operator'), async (req: AuthenticatedRequest, res, next) => {
   try {
     const parsed = publicLeadSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -177,7 +177,7 @@ router.get('/leads/:id', async (req, res, next) => {
   }
 });
 
-router.patch('/leads/:id', async (req: AuthenticatedRequest, res, next) => {
+router.patch('/leads/:id', requireRole('owner', 'admin', 'manager', 'operator'), async (req: AuthenticatedRequest, res, next) => {
   try {
     const parsedId = parseLeadId(req.params.id);
     if (!parsedId.success) {
@@ -204,7 +204,7 @@ router.patch('/leads/:id', async (req: AuthenticatedRequest, res, next) => {
   }
 });
 
-router.post('/leads/:id/notes', async (req: AuthenticatedRequest, res, next) => {
+router.post('/leads/:id/notes', requireRole('owner', 'admin', 'manager', 'operator'), async (req: AuthenticatedRequest, res, next) => {
   try {
     const parsedId = parseLeadId(req.params.id);
     if (!parsedId.success) {

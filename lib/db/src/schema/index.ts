@@ -5,6 +5,8 @@ export const leadStatuses = ['new', 'contacted', 'meeting', 'proposal', 'won', '
 export type LeadStatus = (typeof leadStatuses)[number];
 export const leadSources = ['google', 'meta_ads', 'organic', 'site', 'manual', 'referral', 'other'] as const;
 export type LeadSource = (typeof leadSources)[number];
+export const crmRoles = ['owner', 'admin', 'manager', 'operator', 'viewer'] as const;
+export type CrmRole = (typeof crmRoles)[number];
 
 export const leadsTable = pgTable('leads', {
   id: serial('id').primaryKey(),
@@ -37,6 +39,17 @@ export const leadActivitiesTable = pgTable('lead_activities', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const crmUsersTable = pgTable('crm_users', {
+  clerkUserId: varchar('clerk_user_id', { length: 255 }).primaryKey(),
+  email: varchar('email', { length: 320 }).notNull(),
+  name: varchar('name', { length: 240 }).notNull(),
+  role: varchar('role', { length: 20 }).notNull().default('operator'),
+  active: integer('active').notNull().default(1),
+  invitedAt: timestamp('invited_at', { withTimezone: true }).notNull().defaultNow(),
+  lastSeenAt: timestamp('last_seen_at', { withTimezone: true }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const insertLeadSchema = createInsertSchema(leadsTable).omit({
   id: true,
   createdAt: true,
@@ -46,3 +59,4 @@ export const insertLeadSchema = createInsertSchema(leadsTable).omit({
 export type Lead = typeof leadsTable.$inferSelect;
 export type LeadNote = typeof leadNotesTable.$inferSelect;
 export type LeadActivity = typeof leadActivitiesTable.$inferSelect;
+export type CrmUser = typeof crmUsersTable.$inferSelect;
