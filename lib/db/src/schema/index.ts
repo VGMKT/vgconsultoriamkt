@@ -42,7 +42,7 @@ export const leadActivitiesTable = pgTable('lead_activities', {
 
 export const crmUsersTable = pgTable('crm_users', {
   id: serial('id').primaryKey(),
-  clerkUserId: varchar('clerk_user_id', { length: 255 }).unique(),
+  clerkUserId: varchar('clerk_user_id', { length: 255 }),
   email: varchar('email', { length: 320 }).notNull(),
   name: varchar('name', { length: 240 }).notNull(),
   role: varchar('role', { length: 20 }).notNull().default('operator'),
