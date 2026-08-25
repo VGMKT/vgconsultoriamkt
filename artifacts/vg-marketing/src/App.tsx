@@ -3,7 +3,7 @@ import { ArrowDownRight, ArrowRight, BarChart3, Check, ChevronDown, CircleCheck,
 import { Link, Redirect, Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ClerkProvider, useAuth, useClerk, useUser } from '@clerk/react';
-import { useSignIn } from '@clerk/react/legacy';
+import { useSignIn, useSignUp } from '@clerk/react/legacy';
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -777,10 +777,12 @@ function SignInPage() {
   const [, setLocation] = useLocation();
   const { isLoaded: authLoaded, isSignedIn } = useAuth();
   const { isLoaded, signIn } = useSignIn();
+  const { isLoaded: signUpLoaded, signUp } = useSignUp();
   const { setActive } = useClerk();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [mode, setMode] = useState<'login' | 'client-trust-code' | 'reset-code' | 'reset-password'>('login');
+  const [mode, setMode] = useState<'login' | 'client-trust-code' | 'reset-code' | 'reset-password' | 'invitation-password'>('login');
+  const [invitationTicket, setInvitationTicket] = useState('');
   const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -793,6 +795,15 @@ function SignInPage() {
     }
   }, [authLoaded, isSignedIn, setLocation]);
 
+  useEffect(() => {
+    const ticket = new URLSearchParams(window.location.search).get('__clerk_ticket');
+    if (ticket) {
+      setInvitationTicket(ticket);
+      setMode('invitation-password');
+      setMessage('Defina sua senha para aceitar o convite e ativar seu acesso.');
+    }
+  }, []);
+
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!isLoaded || !signIn) return;
@@ -800,7 +811,24 @@ function SignInPage() {
     setError('');
     setMessage('');
     try {
-      if (mode === 'login') {
+      if (mode === 'invitation-password') {
+        if (!signUpLoaded || !signUp || !invitationTicket) {
+          throw new Error('O convite não está mais disponível. Solicite um novo convite.');
+        }
+        if (!hasStrongPassword(newPassword)) {
+          setError('A nova senha deve ter pelo menos 12 caracteres, incluindo maiúscula, minúscula, número e símbolo.');
+          return;
+        }
+        await signUp.create({ strategy: 'ticket', ticket: invitationTicket });
+        const result = await signUp.update({ password: newPassword });
+        if (result.status === 'complete' && result.createdSessionId) {
+          await setActive({ session: result.createdSessionId });
+          window.history.replaceState({}, '', '/admin');
+          setLocation('/admin');
+        } else {
+          setError(`O Clerk retornou o estado "${result.status}" e não concluiu o aceite do convite.`);
+        }
+      } else if (mode === 'login') {
           setMessage('Validando acesso...');
         await signIn.create({ identifier: email });
         const result = await signIn.attemptFirstFactor({ strategy: 'password', password });
@@ -877,6 +905,7 @@ function SignInPage() {
 
   const resetFlow = () => {
     setMode('login');
+    setInvitationTicket('');
     setCode('');
     setNewPassword('');
     setError('');
@@ -893,16 +922,16 @@ function SignInPage() {
           <form onSubmit={submit} className="flex aspect-square flex-col justify-start rounded-full bg-[#f5f7fa] px-8 pb-8 pt-20 shadow-[0_20px_60px_rgba(0,0,0,.2)] ring-1 ring-white/35 ring-offset-8 ring-offset-[#061a36] sm:px-10">
           <div className="mb-4 text-center">
            <h1 className="font-display text-[1.45rem] font-semibold tracking-[-.04em] text-[#202f4d]">CRM de Marketing</h1>
-             {mode !== 'login' && <p className="mt-1 text-[11px] text-[#7a8799]">{mode === 'client-trust-code' ? 'Digite o código enviado para confirmar este navegador.' : mode === 'reset-code' ? 'Digite o código enviado para seu e-mail.' : 'Cadastre uma nova senha.'}</p>}
+              {mode !== 'login' && <p className="mt-1 text-[11px] text-[#7a8799]">{mode === 'client-trust-code' ? 'Digite o código enviado para confirmar este navegador.' : mode === 'reset-code' ? 'Digite o código enviado para seu e-mail.' : mode === 'invitation-password' ? 'Crie uma senha para concluir seu acesso.' : 'Cadastre uma nova senha.'}</p>}
           </div>
           <div className="mx-auto w-full max-w-[220px]">
           {mode === 'login' && <><label htmlFor="login-email" className="text-xs font-bold text-[#202f4d]">E-mail</label><input id="login-email" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} className="mt-1.5 w-full rounded-lg border border-[#c3d1df] bg-white px-3 py-2 text-sm text-[#202f4d] outline-none focus:border-[#9fe4e5]" /><label htmlFor="login-password" className="mt-3 block text-xs font-bold text-[#202f4d]">Senha</label><input id="login-password" type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} className="mt-1.5 w-full rounded-lg border border-[#c3d1df] bg-white px-3 py-2 text-sm text-[#202f4d] outline-none focus:border-[#9fe4e5]" /></>}
            {mode === 'client-trust-code' && <><label htmlFor="client-trust-code" className="text-xs font-bold text-[#202f4d]">Código de confirmação</label><input id="client-trust-code" inputMode="numeric" autoComplete="one-time-code" required value={code} onChange={(event) => setCode(event.target.value)} placeholder="Digite o código" className="mt-1.5 w-full rounded-lg border border-[#c3d1df] bg-white px-3.5 py-2.5 text-sm text-[#202f4d] outline-none focus:border-[#9fe4e5]" /></>}
            {mode === 'reset-code' && <><label htmlFor="reset-code" className="text-xs font-bold text-[#202f4d]">Código de recuperação</label><input id="reset-code" inputMode="numeric" autoComplete="one-time-code" required value={code} onChange={(event) => setCode(event.target.value)} placeholder="Digite o código" className="mt-1.5 w-full rounded-lg border border-[#c3d1df] bg-white px-3.5 py-2.5 text-sm text-[#202f4d] outline-none focus:border-[#9fe4e5]" /></>}
-           {mode === 'reset-password' && <><label htmlFor="new-password" className="text-xs font-bold text-[#202f4d]">Nova senha</label><input id="new-password" type="password" autoComplete="new-password" required minLength={12} pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}" title="Use pelo menos 12 caracteres, com maiúscula, minúscula, número e símbolo." value={newPassword} onChange={(event) => setNewPassword(event.target.value)} placeholder="12+ caracteres, maiúscula, número e símbolo" className="mt-1.5 w-full rounded-lg border border-[#c3d1df] bg-white px-3.5 py-2.5 text-sm text-[#202f4d] outline-none focus:border-[#9fe4e5]" /></>}
+            {(mode === 'reset-password' || mode === 'invitation-password') && <><label htmlFor="new-password" className="text-xs font-bold text-[#202f4d]">Nova senha</label><input id="new-password" type="password" autoComplete="new-password" required minLength={12} pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}" title="Use pelo menos 12 caracteres, com maiúscula, minúscula, número e símbolo." value={newPassword} onChange={(event) => setNewPassword(event.target.value)} placeholder="12+ caracteres, maiúscula, número e símbolo" className="mt-1.5 w-full rounded-lg border border-[#c3d1df] bg-white px-3.5 py-2.5 text-sm text-[#202f4d] outline-none focus:border-[#9fe4e5]" /></>}
           {error && <p role="alert" className="mt-4 rounded-lg border border-[#e4b1aa] bg-[#fff5f3] px-3 py-2 text-xs leading-5 text-[#9d4b43]">{error}</p>}
           {message && <p className="mt-4 rounded-lg border border-[#b8dddd] bg-[#eefafa] px-3 py-2 text-xs leading-5 text-[#276d70]">{message}</p>}
-           {mode === 'login' ? <div className="mt-4 flex items-center justify-center gap-5"><button type="submit" disabled={loading || !isLoaded} className="rounded-lg bg-[#202f4d] px-4 py-2.5 text-xs font-extrabold text-white transition-colors hover:bg-[#58739f] disabled:cursor-wait disabled:opacity-60">{loading ? 'Aguarde...' : 'Entrar'}</button><button type="button" onClick={() => void recoverPassword()} className="text-right text-[11px] font-bold text-[#58739f] hover:text-[#202f4d]">Recuperar senha</button></div> : <button type="submit" disabled={loading || !isLoaded} className="mt-4 w-full rounded-lg bg-[#202f4d] px-4 py-3 text-sm font-extrabold text-white transition-colors hover:bg-[#58739f] disabled:cursor-wait disabled:opacity-60">{loading ? 'Aguarde...' : mode === 'client-trust-code' || mode === 'reset-code' ? 'Validar código' : 'Salvar nova senha'}</button>}
+           {mode === 'login' ? <div className="mt-4 flex items-center justify-center gap-5"><button type="submit" disabled={loading || !isLoaded} className="rounded-lg bg-[#202f4d] px-4 py-2.5 text-xs font-extrabold text-white transition-colors hover:bg-[#58739f] disabled:cursor-wait disabled:opacity-60">{loading ? 'Aguarde...' : 'Entrar'}</button><button type="button" onClick={() => void recoverPassword()} className="text-right text-[11px] font-bold text-[#58739f] hover:text-[#202f4d]">Recuperar senha</button></div> : <button type="submit" disabled={loading || !isLoaded || (mode === 'invitation-password' && !signUpLoaded)} className="mt-4 w-full rounded-lg bg-[#202f4d] px-4 py-3 text-sm font-extrabold text-white transition-colors hover:bg-[#58739f] disabled:cursor-wait disabled:opacity-60">{loading ? 'Aguarde...' : mode === 'client-trust-code' || mode === 'reset-code' ? 'Validar código' : mode === 'invitation-password' ? 'Aceitar convite' : 'Salvar nova senha'}</button>}
           {mode !== 'login' && <button type="button" onClick={resetFlow} className="mt-4 w-full text-xs font-bold text-[#58739f]">Voltar para entrar</button>}
           </div>
           </form>
