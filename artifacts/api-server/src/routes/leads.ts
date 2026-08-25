@@ -1,7 +1,7 @@
 import { Router, type IRouter } from 'express';
-import { and, desc, eq, ilike, or, sql } from 'drizzle-orm';
+import { and, desc, eq, ilike, isNull, or, sql } from 'drizzle-orm';
 import { db } from '@workspace/db';
-import { leadActivitiesTable, leadNotesTable, leadsTable, leadSources, leadStatuses, type LeadSource, type LeadStatus } from '@workspace/db/schema';
+import { crmUsersTable, leadActivitiesTable, leadNotesTable, leadsTable, leadSources, leadStatuses, type LeadSource, type LeadStatus } from '@workspace/db/schema';
 import { requireCrmUser, requireRole, type AuthenticatedRequest } from '../middleware/require-auth';
 import { logger } from '../lib/logger';
 import { z } from 'zod';
@@ -29,6 +29,7 @@ const leadFiltersSchema = z.object({
 const updateLeadSchema = z.object({
   status: z.enum(leadStatuses),
   source: z.enum(leadSources),
+  assignedUserId: z.coerce.number().int().positive().nullable().optional(),
 }).strict();
 
 const noteSchema = z.object({
@@ -189,9 +190,28 @@ router.patch('/leads/:id', requireRole('owner', 'admin', 'manager', 'operator'),
       res.status(400).json({ error: 'Dados de atualização inválidos.', details: parsed.error.flatten() });
       return;
     }
-    const { status, source } = parsed.data;
+    const { status, source, assignedUserId } = parsed.data;
+    if (assignedUserId !== undefined && !['owner', 'admin', 'manager'].includes(req.crmUser?.role || '')) {
+      res.status(403).json({ error: 'Somente gestor ou superior pode alterar o consultor responsável.' });
+      return;
+    }
+    if (assignedUserId !== undefined && assignedUserId !== null) {
+      const [consultant] = await db.select({ id: crmUsersTable.id }).from(crmUsersTable).where(and(
+        eq(crmUsersTable.id, assignedUserId),
+        eq(crmUsersTable.role, 'operator'),
+        eq(crmUsersTable.active, 1),
+        isNull(crmUsersTable.deletedAt),
+      ));
+      if (!consultant) {
+        res.status(400).json({ error: 'O responsável precisa ser um consultor ativo.' });
+        return;
+      }
+    }
     const id = parsedId.data;
-    const [lead] = await db.update(leadsTable).set({ status, source, updatedAt: new Date() }).where(eq(leadsTable.id, id)).returning();
+    const updateValues = assignedUserId === undefined
+      ? { status, source, updatedAt: new Date() }
+      : { status, source, assignedUserId, updatedAt: new Date() };
+    const [lead] = await db.update(leadsTable).set(updateValues).where(eq(leadsTable.id, id)).returning();
     if (!lead) {
       res.status(404).json({ error: 'Lead não encontrado.' });
       return;

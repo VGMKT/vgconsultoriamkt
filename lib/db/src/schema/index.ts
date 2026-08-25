@@ -5,7 +5,7 @@ export const leadStatuses = ['new', 'contacted', 'meeting', 'proposal', 'won', '
 export type LeadStatus = (typeof leadStatuses)[number];
 export const leadSources = ['google', 'meta_ads', 'organic', 'site', 'manual', 'referral', 'other'] as const;
 export type LeadSource = (typeof leadSources)[number];
-export const crmRoles = ['owner', 'admin', 'manager', 'operator', 'viewer'] as const;
+export const crmRoles = ['owner', 'admin', 'manager', 'operator'] as const;
 export type CrmRole = (typeof crmRoles)[number];
 
 export const leadsTable = pgTable('leads', {
@@ -18,6 +18,7 @@ export const leadsTable = pgTable('leads', {
   message: text('message'),
   source: varchar('source', { length: 80 }).notNull().default('site'),
   status: varchar('status', { length: 20 }).notNull().default('new'),
+  assignedUserId: integer('assigned_user_id').references(() => crmUsersTable.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -40,7 +41,8 @@ export const leadActivitiesTable = pgTable('lead_activities', {
 });
 
 export const crmUsersTable = pgTable('crm_users', {
-  clerkUserId: varchar('clerk_user_id', { length: 255 }).primaryKey(),
+  id: serial('id').primaryKey(),
+  clerkUserId: varchar('clerk_user_id', { length: 255 }).unique(),
   email: varchar('email', { length: 320 }).notNull(),
   name: varchar('name', { length: 240 }).notNull(),
   role: varchar('role', { length: 20 }).notNull().default('operator'),
@@ -48,6 +50,7 @@ export const crmUsersTable = pgTable('crm_users', {
   invitedAt: timestamp('invited_at', { withTimezone: true }).notNull().defaultNow(),
   lastSeenAt: timestamp('last_seen_at', { withTimezone: true }),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
 });
 
 export const insertLeadSchema = createInsertSchema(leadsTable).omit({

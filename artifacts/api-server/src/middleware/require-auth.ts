@@ -1,7 +1,7 @@
 import { getAuth } from '@clerk/express';
 import type { NextFunction, Request, Response } from 'express';
 import { logger } from '../lib/logger';
-import { and, count, eq } from 'drizzle-orm';
+import { and, count, eq, isNull } from 'drizzle-orm';
 import { db } from '@workspace/db';
 import { crmUsersTable, crmRoles, type CrmRole } from '@workspace/db/schema';
 
@@ -30,8 +30,24 @@ export async function requireCrmUser(req: AuthenticatedRequest, res: Response, n
   requireAuth(req, res, async (error) => {
     if (error) return next(error);
     try {
-      const [existing] = await db.select().from(crmUsersTable).where(eq(crmUsersTable.clerkUserId, req.userId!));
-      if (!existing) {
+      const auth = getAuth(req);
+      const claims = auth?.sessionClaims as Record<string, unknown> | undefined;
+      const email = typeof claims?.email === 'string'
+        ? claims.email
+        : typeof claims?.email_address === 'string' ? claims.email_address : undefined;
+      const name = typeof claims?.name === 'string'
+        ? claims.name
+        : typeof claims?.first_name === 'string' ? claims.first_name : 'Usuário do CRM';
+      const [existing] = await db.select().from(crmUsersTable).where(
+        and(isNull(crmUsersTable.deletedAt), email
+          ? eq(crmUsersTable.clerkUserId, req.userId!)
+          : eq(crmUsersTable.clerkUserId, req.userId!)),
+      );
+      const [emailMatch] = !existing && email
+        ? await db.select().from(crmUsersTable).where(and(isNull(crmUsersTable.deletedAt), eq(crmUsersTable.email, email)))
+        : [];
+      const linkedUser = existing || emailMatch;
+      if (!linkedUser) {
         const [{ value: userCount }] = await db.select({ value: count() }).from(crmUsersTable);
         if (Number(userCount) !== 0) {
           res.status(403).json({ error: 'Usuário ainda não foi habilitado no CRM.' });
@@ -39,18 +55,18 @@ export async function requireCrmUser(req: AuthenticatedRequest, res: Response, n
         }
         const [owner] = await db.insert(crmUsersTable).values({
           clerkUserId: req.userId!,
-          email: String(req.headers['x-clerk-user-email'] || 'conta principal'),
-          name: String(req.headers['x-clerk-user-name'] || 'Proprietário'),
+          email: email || 'conta principal',
+          name,
           role: 'owner',
         }).returning();
         req.crmUser = owner;
       } else {
-        if (!existing.active) {
+        if (!linkedUser.active) {
           res.status(403).json({ error: 'Usuário desativado.' });
           return;
         }
-        await db.update(crmUsersTable).set({ lastSeenAt: new Date() }).where(eq(crmUsersTable.clerkUserId, req.userId!));
-        req.crmUser = existing;
+        const [updated] = await db.update(crmUsersTable).set({ clerkUserId: req.userId!, lastSeenAt: new Date() }).where(eq(crmUsersTable.id, linkedUser.id)).returning();
+        req.crmUser = updated;
       }
       next();
     } catch (error) {
