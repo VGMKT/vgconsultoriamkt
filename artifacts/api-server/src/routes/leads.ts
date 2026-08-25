@@ -119,9 +119,14 @@ router.post('/leads/manual', requireRole('owner', 'admin', 'manager', 'operator'
   }
 });
 
-router.get('/leads/summary', async (_req, res, next) => {
+router.get('/leads/summary', async (req: AuthenticatedRequest, res, next) => {
   try {
-    const rows = await db.select({ status: leadsTable.status, count: sql<number>`count(*)::int` }).from(leadsTable).groupBy(leadsTable.status);
+    const visibilityFilter = req.crmUser?.role === 'operator' && req.crmUser.id
+      ? eq(leadsTable.assignedUserId, req.crmUser.id)
+      : undefined;
+    const rows = await db.select({ status: leadsTable.status, count: sql<number>`count(*)::int` }).from(leadsTable)
+      .where(visibilityFilter)
+      .groupBy(leadsTable.status);
     const summary = Object.fromEntries(leadStatuses.map((status) => [status, { count: rows.find((row) => row.status === status)?.count ?? 0, label: statusLabels[status] }]));
     res.json({ summary });
   } catch (error) {
@@ -129,7 +134,7 @@ router.get('/leads/summary', async (_req, res, next) => {
   }
 });
 
-router.get('/leads', async (req, res, next) => {
+router.get('/leads', async (req: AuthenticatedRequest, res, next) => {
   try {
     const parsed = leadFiltersSchema.safeParse(req.query);
     if (!parsed.success) {
@@ -138,6 +143,9 @@ router.get('/leads', async (req, res, next) => {
     }
     const { status, source, search, page, limit } = parsed.data;
     const filters = [];
+    if (req.crmUser?.role === 'operator' && req.crmUser.id) {
+      filters.push(eq(leadsTable.assignedUserId, req.crmUser.id));
+    }
     if (status) filters.push(eq(leadsTable.status, status));
     if (source) filters.push(eq(leadsTable.source, source));
     if (search) {
