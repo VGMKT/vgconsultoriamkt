@@ -1,0 +1,9 @@
+- [API bundler dependencies](api-bundler-dependencies.md) — imported packages must be declared directly in the API artifact for esbuild resolution.
+- [Clerk custom domain](clerk-custom-domain.md) — production custom domains need authoritative DNS verification and SSL before the browser SDK can initialize.
+- [Clerk cross-origin API authentication](clerk-cross-origin-api.md) — separate frontend and API domains require forwarding the Clerk session token to protected API requests.
+- [Astro Replit workflow](astro-replit-workflow.md) — Astro 7 needs a foreground override or the managed preview workflow exits.
+- [Frozen workspace lockfiles](frozen-workspace-lockfiles.md) — removing workspace dependencies requires regenerating the importer in pnpm-lock.yaml before Netlify CI.
+- [Render credentials](render-credentials.md) — required Clerk and deployment keys are already configured; never request or store their values.
+- [CRM schema deploy safety](crm-schema-deploy-safety.md) — avoid schema changes that make Render's non-interactive Drizzle deploy prompt for a destructive truncate.
+- [GTM CSP allowlist](gtm-csp-allowlist.md) — Netlify CSP must allow Google Tag Manager, Google Ads, GA4, and Meta endpoints for browser tags to fire.
+- [Consent for lead geolocation](lead-attribution-consent.md) — coordinates are optional and collected only after explicit visitor authorization.

@@ -1,4 +1,4 @@
-import { integer, pgTable, serial, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import { doublePrecision, integer, pgTable, serial, text, timestamp, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 
 export const leadStatuses = ['new', 'contacted', 'meeting', 'proposal', 'won', 'lost'] as const;
@@ -17,6 +17,8 @@ export const leadsTable = pgTable('leads', {
   whatsapp: varchar('whatsapp', { length: 40 }).notNull(),
   company: varchar('company', { length: 180 }),
   service: varchar('service', { length: 100 }),
+  objective: varchar('objective', { length: 160 }),
+  marketingBudget: varchar('marketing_budget', { length: 80 }),
   message: text('message'),
   source: varchar('source', { length: 80 }).notNull().default('site'),
   utmSource: varchar('utm_source', { length: 255 }),
@@ -26,8 +28,12 @@ export const leadsTable = pgTable('leads', {
   utmContent: varchar('utm_content', { length: 255 }),
   gclid: varchar('gclid', { length: 500 }),
   fbclid: varchar('fbclid', { length: 500 }),
+  ctwaClid: varchar('ctwa_clid', { length: 500 }),
   referrer: varchar('referrer', { length: 1000 }),
   landingPage: varchar('landing_page', { length: 2000 }),
+  ipAddress: varchar('ip_address', { length: 64 }),
+  latitude: doublePrecision('latitude'),
+  longitude: doublePrecision('longitude'),
   status: varchar('status', { length: 20 }).notNull().default('new'),
   assignedUserId: integer('assigned_user_id').references(() => crmUsersTable.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

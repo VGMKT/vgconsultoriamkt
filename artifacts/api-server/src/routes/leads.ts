@@ -8,6 +8,21 @@ import { z } from 'zod';
 
 const router: IRouter = Router();
 const leadIdSchema = z.coerce.number().int().positive();
+const leadObjectives = [
+  'sell_more_online',
+  'build_marketing_team',
+  'train_current_team',
+  'managed_marketing',
+  'strengthen_brand',
+] as const;
+const marketingBudgetOptions = [
+  'not_investing',
+  'up_to_3000',
+  '3000_to_10000',
+  '10000_to_30000',
+  'above_30000',
+] as const;
+
 function isValidBrazilianWhatsApp(value: string) {
   const digits = value.replace(/\D/g, '');
   const localNumber = digits.startsWith('55') && digits.length === 13 ? digits.slice(2) : digits;
@@ -22,6 +37,8 @@ const publicLeadSchema = z.object({
   whatsapp: z.string().trim().min(8, 'Informe um WhatsApp válido.').max(40).refine(isValidBrazilianWhatsApp, 'Informe um WhatsApp brasileiro válido com DDD.'),
   company: z.string().trim().max(180).optional().nullable(),
   service: z.string().trim().max(100).optional().nullable(),
+  objective: z.enum(leadObjectives).optional().nullable(),
+  marketing_budget: z.enum(marketingBudgetOptions).optional().nullable(),
   message: z.string().trim().max(5000).optional().nullable(),
   source: z.string().trim().max(80).optional().nullable(),
   utm_source: z.string().trim().max(255).optional().nullable(),
@@ -31,8 +48,11 @@ const publicLeadSchema = z.object({
   utm_content: z.string().trim().max(255).optional().nullable(),
   gclid: z.string().trim().max(500).optional().nullable(),
   fbclid: z.string().trim().max(500).optional().nullable(),
+  ctwa_clid: z.string().trim().max(500).optional().nullable(),
   referrer: z.string().trim().max(1000).optional().nullable(),
   landing_page: z.string().trim().max(2000).optional().nullable(),
+  latitude: z.coerce.number().min(-90).max(90).optional().nullable(),
+  longitude: z.coerce.number().min(-180).max(180).optional().nullable(),
 }).strict();
 
 const manualLeadSchema = publicLeadSchema.extend({
@@ -102,6 +122,8 @@ const parseSource = (value: unknown, fallback: LeadSource): LeadSource => {
 
 function parseAttribution(data: z.infer<typeof publicLeadSchema>) {
   return {
+    objective: data.objective || null,
+    marketingBudget: data.marketing_budget || null,
     utmSource: data.utm_source || null,
     utmMedium: data.utm_medium || null,
     utmCampaign: data.utm_campaign || null,
@@ -109,9 +131,16 @@ function parseAttribution(data: z.infer<typeof publicLeadSchema>) {
     utmContent: data.utm_content || null,
     gclid: data.gclid || null,
     fbclid: data.fbclid || null,
+    ctwaClid: data.ctwa_clid || null,
     referrer: data.referrer || null,
     landingPage: data.landing_page || null,
+    latitude: data.latitude ?? null,
+    longitude: data.longitude ?? null,
   };
+}
+
+function parseRequestIp(req: { ip?: string }) {
+  return req.ip?.slice(0, 64) || null;
 }
 
 const statusLabels: Record<LeadStatus, string> = {
@@ -138,6 +167,7 @@ router.post('/leads', async (req, res, next) => {
       ...parsed.data,
       source: parseSource(parsed.data.source, 'site'),
       ...parseAttribution(parsed.data),
+      ipAddress: parseRequestIp(req),
       status: 'new',
     }).returning();
     await db.insert(leadActivitiesTable).values({ leadId: lead.id, type: 'created', detail: 'Lead recebido pelo site' });
@@ -161,6 +191,7 @@ router.post('/leads/manual', requireRole('owner', 'admin', 'manager', 'operator'
       ...parsed.data,
       source: parseSource(parsed.data.source, 'manual'),
       ...parseAttribution(parsed.data),
+      ipAddress: parseRequestIp(req),
       status: 'new',
     }).returning();
     await db.insert(leadActivitiesTable).values({ leadId: lead.id, actorId: req.userId, type: 'created', detail: 'Lead cadastrado manualmente' });

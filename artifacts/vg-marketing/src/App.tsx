@@ -658,6 +658,7 @@ type LeadAttribution = {
   utm_content?: string;
   gclid?: string;
   fbclid?: string;
+  ctwa_clid?: string;
   referrer?: string;
   landing_page?: string;
 };
@@ -671,6 +672,7 @@ const LEAD_ATTRIBUTION_KEYS: Array<keyof LeadAttribution> = [
   'utm_content',
   'gclid',
   'fbclid',
+  'ctwa_clid',
 ];
 
 declare global {
@@ -693,7 +695,6 @@ function captureFirstTouchAttribution(): LeadAttribution | null {
       return result;
     }, {});
 
-    if (!Object.keys(attribution).length) return null;
     attribution.referrer = document.referrer.slice(0, 1000);
     attribution.landing_page = `${window.location.pathname}${window.location.search}`.slice(0, 2000);
     window.sessionStorage.setItem(LEAD_ATTRIBUTION_STORAGE_KEY, JSON.stringify(attribution));
@@ -735,12 +736,53 @@ function isValidBrazilianWhatsApp(value: string) {
   return localNumber.length === 11 && /^[1-9]{2}9\d{8}$/.test(localNumber) && !/^(\d)\1+$/.test(localNumber);
 }
 
+function formatBrazilianWhatsApp(value: string) {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+}
+
+const LEAD_OBJECTIVE_OPTIONS = [
+  ['sell_more_online', 'Quero vender mais pela internet'],
+  ['build_marketing_team', 'Quero estruturar minha própria equipe de marketing'],
+  ['train_current_team', 'Quero treinar e capacitar meu time atual'],
+  ['managed_marketing', 'Quero um marketing gerenciado pela VG'],
+  ['strengthen_brand', 'Quero fortalecer minha marca e presença'],
+] as const;
+const MARKETING_BUDGET_OPTIONS = [
+  ['not_investing', 'Ainda não investe'],
+  ['up_to_3000', 'Até R$ 3.000'],
+  ['3000_to_10000', 'R$ 3.000 a R$ 10.000'],
+  ['10000_to_30000', 'R$ 10.000 a R$ 30.000'],
+  ['above_30000', 'Acima de R$ 30.000'],
+] as const;
+const LEAD_OBJECTIVE_LABELS = Object.fromEntries(LEAD_OBJECTIVE_OPTIONS);
+const MARKETING_BUDGET_LABELS = Object.fromEntries(MARKETING_BUDGET_OPTIONS);
+
 function ContactForm({ compact = false, serviceValue = '' }: { compact?: boolean; serviceValue?: string }) {
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ name: '', email: '', whatsapp: '', company: '', service: serviceValue, message: '', source: detectLeadSource() });
-  const update = (field: keyof typeof form, value: string) => setForm((current) => ({ ...current, [field]: value }));
+  const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [locationStatus, setLocationStatus] = useState('');
+  const [form, setForm] = useState({ name: '', email: '', whatsapp: '', company: '', service: serviceValue, objective: '', marketing_budget: '', message: '', source: detectLeadSource() });
+  const update = (field: keyof typeof form, value: string) => setForm((current) => ({ ...current, [field]: field === 'whatsapp' ? formatBrazilianWhatsApp(value) : value }));
+  const requestLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationStatus('Seu navegador não oferece compartilhamento de localização.');
+      return;
+    }
+    setLocationStatus('Solicitando sua autorização...');
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+        setLocationStatus('Localização adicionada. Você pode enviar o formulário quando quiser.');
+      },
+      () => setLocationStatus('A localização não foi compartilhada. Você pode continuar sem ela.'),
+      { enableHighAccuracy: false, timeout: 10_000, maximumAge: 300_000 },
+    );
+  };
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!form.name || !form.email || !form.whatsapp || (!compact && !form.company)) {
@@ -759,7 +801,7 @@ function ContactForm({ compact = false, serviceValue = '' }: { compact?: boolean
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ ...form, ...(attribution || {}) }),
+        body: JSON.stringify({ ...form, ...(attribution || {}), ...(location || {}) }),
       });
       if (!response.ok) throw new Error('lead-submit-failed');
       setSubmitted(true);
@@ -767,6 +809,8 @@ function ContactForm({ compact = false, serviceValue = '' }: { compact?: boolean
         event: 'generate_lead',
         form_name: compact ? 'compact_contact' : 'contact',
         service: form.service || undefined,
+        objective: form.objective || undefined,
+        marketing_budget: form.marketing_budget || undefined,
         ...attribution,
       });
     } catch {
@@ -782,7 +826,7 @@ function ContactForm({ compact = false, serviceValue = '' }: { compact?: boolean
         <p className="mb-3 font-mono-vg text-[10px] uppercase tracking-[.2em] text-[#9fe4e5]">Mensagem recebida</p>
         <h3 className="font-display text-3xl font-semibold leading-tight">Solicitação recebida</h3>
         <p className="mt-4 max-w-md text-sm leading-7 text-slate-300">Recebemos sua solicitação, em breve entraremos em contato.</p>
-        <button type="button" onClick={() => { setSubmitted(false); setForm({ name: '', email: '', whatsapp: '', company: '', service: serviceValue, message: '', source: detectLeadSource() }); }} data-testid="button-new-form" className="mt-8 flex w-fit items-center gap-2 text-sm font-bold text-[#9fe4e5]">Enviar outra mensagem <ArrowRight className="h-4 w-4" /></button>
+         <button type="button" onClick={() => { setSubmitted(false); setLocation(null); setLocationStatus(''); setForm({ name: '', email: '', whatsapp: '', company: '', service: serviceValue, objective: '', marketing_budget: '', message: '', source: detectLeadSource() }); }} data-testid="button-new-form" className="mt-8 flex w-fit items-center gap-2 text-sm font-bold text-[#9fe4e5]">Enviar outra mensagem <ArrowRight className="h-4 w-4" /></button>
       </div>
     );
   }
@@ -801,21 +845,41 @@ function ContactForm({ compact = false, serviceValue = '' }: { compact?: boolean
           <input id="contact-email" name="email" autoComplete="email" required type="email" value={form.email} onChange={(event) => update('email', event.target.value)} data-testid="input-email" className="mt-2 w-full rounded-lg border border-white/15 bg-[#1e2d4a] px-3.5 py-3 text-sm text-white placeholder:text-slate-500 focus:border-[#9fe4e5] focus:outline-none" placeholder="voce@empresa.com.br" />
         </label>
         <label htmlFor="contact-whatsapp" className="text-xs font-semibold text-slate-300">WhatsApp *
-          <input id="contact-whatsapp" name="whatsapp" autoComplete="tel" inputMode="tel" required type="tel" value={form.whatsapp} onChange={(event) => update('whatsapp', event.target.value)} data-testid="input-whatsapp" className="mt-2 w-full rounded-lg border border-white/15 bg-[#1e2d4a] px-3.5 py-3 text-sm text-white placeholder:text-slate-500 focus:border-[#9fe4e5] focus:outline-none" placeholder="(00) 00000-0000" />
+          <input id="contact-whatsapp" name="whatsapp" autoComplete="tel" inputMode="numeric" maxLength={15} pattern="\(\d{2}\) \d{5}-\d{4}" required type="tel" value={form.whatsapp} onChange={(event) => update('whatsapp', event.target.value)} data-testid="input-whatsapp" className="mt-2 w-full rounded-lg border border-white/15 bg-[#1e2d4a] px-3.5 py-3 text-sm text-white placeholder:text-slate-500 focus:border-[#9fe4e5] focus:outline-none" placeholder="(00) 00000-0000" />
         </label>
         <label htmlFor="contact-company" className="text-xs font-semibold text-slate-300">Empresa {compact ? <span className="font-normal text-slate-500">(opcional)</span> : '*'}
           <input id="contact-company" name="organization" autoComplete="organization" required={!compact} value={form.company} onChange={(event) => update('company', event.target.value)} data-testid="input-company" className="mt-2 w-full rounded-lg border border-white/15 bg-[#1e2d4a] px-3.5 py-3 text-sm text-white placeholder:text-slate-500 focus:border-[#9fe4e5] focus:outline-none" placeholder="Nome da empresa" />
         </label>
-        <label htmlFor="contact-service" className="text-xs font-semibold text-slate-300">Como podemos ajudar?
+        {compact ? <>
+          <label htmlFor="contact-objective" className="text-xs font-semibold text-slate-300">O que você busca agora?
+            <select id="contact-objective" name="objective" value={form.objective} onChange={(event) => update('objective', event.target.value)} className="mt-2 w-full appearance-none rounded-lg border border-white/15 bg-[#1e2d4a] px-3.5 py-3 text-sm text-white focus:border-[#9fe4e5] focus:outline-none">
+              <option value="">Selecione uma opção</option>
+              {LEAD_OBJECTIVE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select>
+          </label>
+          <label htmlFor="contact-budget" className="text-xs font-semibold text-slate-300">Investimento mensal em marketing
+            <select id="contact-budget" name="marketing_budget" value={form.marketing_budget} onChange={(event) => update('marketing_budget', event.target.value)} className="mt-2 w-full appearance-none rounded-lg border border-white/15 bg-[#1e2d4a] px-3.5 py-3 text-sm text-white focus:border-[#9fe4e5] focus:outline-none">
+              <option value="">Selecione uma faixa</option>
+              {MARKETING_BUDGET_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select>
+          </label>
+        </> : <label htmlFor="contact-service" className="text-xs font-semibold text-slate-300">Como podemos ajudar?
           <select id="contact-service" name="service" value={form.service} onChange={(event) => update('service', event.target.value)} data-testid="select-service" className="mt-2 w-full appearance-none rounded-lg border border-white/15 bg-[#1e2d4a] px-3.5 py-3 text-sm text-white focus:border-[#9fe4e5] focus:outline-none">
             <option value="">Selecione um serviço</option>
             {SERVICES.map((service) => <option key={service.slug} value={service.slug}>{service.label}</option>)}
           </select>
-        </label>
+        </label>}
       </div>
       <label htmlFor="contact-message" className="mt-4 block text-xs font-semibold text-slate-300">Um pouco sobre o desafio
         <textarea id="contact-message" name="message" autoComplete="off" value={form.message} onChange={(event) => update('message', event.target.value)} data-testid="textarea-message" rows={4} className="mt-2 w-full resize-none rounded-lg border border-white/15 bg-[#1e2d4a] px-3.5 py-3 text-sm text-white placeholder:text-slate-500 focus:border-[#9fe4e5] focus:outline-none" placeholder="O que você quer transformar nos próximos meses?" />
       </label>
+      <div className="mt-4 rounded-lg border border-white/10 bg-[#1e2d4a]/60 p-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-[11px] leading-5 text-slate-400">Opcional: compartilhe sua localização para entendermos a região do atendimento. Ela só será enviada com sua autorização.</p>
+          <button type="button" onClick={requestLocation} disabled={Boolean(location)} className="shrink-0 rounded-md border border-[#9fe4e5]/40 px-3 py-2 text-[10px] font-extrabold text-[#9fe4e5] disabled:cursor-default disabled:opacity-70">{location ? 'Localização adicionada' : 'Compartilhar localização'}</button>
+        </div>
+        {locationStatus && <p role="status" className="mt-2 text-[10px] text-slate-300">{locationStatus}</p>}
+      </div>
       {error && <p id="form-error" role="alert" aria-live="assertive" data-testid="status-form-error" className="mt-4 text-xs font-semibold text-[#ffb4a8]">{error}</p>}
       <button type="submit" disabled={sending} data-testid="button-submit-form" className="button-lift mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-[#9fe4e5] px-5 py-3.5 text-sm font-extrabold text-[#202f4d] disabled:cursor-wait disabled:opacity-70">
         {sending ? 'Agendando conversa...' : 'Agendar uma conversa'} {!sending && <ArrowRight className="h-4 w-4" />}
@@ -832,6 +896,8 @@ type CrmLead = {
   whatsapp: string;
   company: string | null;
   service: string | null;
+  objective: string | null;
+  marketingBudget: string | null;
   message: string | null;
   source: string;
   utmSource: string | null;
@@ -841,8 +907,12 @@ type CrmLead = {
   utmContent: string | null;
   gclid: string | null;
   fbclid: string | null;
+  ctwaClid: string | null;
   referrer: string | null;
   landingPage: string | null;
+  ipAddress: string | null;
+  latitude: number | null;
+  longitude: number | null;
   status: string;
   assignedUserId: number | null;
   createdAt: string;
@@ -1072,6 +1142,7 @@ function AdminPage() {
   const [team, setTeam] = useState<CrmUser[]>([]);
   const [pendingRoles, setPendingRoles] = useState<Record<number, CrmRole>>({});
   const [pendingAssignment, setPendingAssignment] = useState<number | null | undefined>(undefined);
+  const [pendingStatus, setPendingStatus] = useState<string | undefined>(undefined);
   const [teamOpen, setTeamOpen] = useState(false);
   const [newTeamUser, setNewTeamUser] = useState({ email: '', name: '', role: 'operator' as CrmRole });
 
@@ -1197,6 +1268,7 @@ function AdminPage() {
     setNotes([]);
     setActivities([]);
     setPendingAssignment(undefined);
+    setPendingStatus(undefined);
     await loadLeads();
     if (reportsOpen) await loadReports();
   };
@@ -1219,6 +1291,7 @@ function AdminPage() {
       const data = await response.json() as { lead: CrmLead; notes: CrmNote[]; activities: CrmActivity[] };
       setSelected(data.lead);
       setPendingAssignment(data.lead.assignedUserId);
+      setPendingStatus(data.lead.status);
       setNotes(data.notes);
       setActivities(data.activities);
     } catch {
@@ -1226,8 +1299,8 @@ function AdminPage() {
     }
   };
 
-  const updateStatus = async (nextStatus: string) => {
-    if (!selected) return;
+  const updateStatus = async (nextStatus = pendingStatus) => {
+    if (!selected || !nextStatus) return;
     const response = await apiFetch(`/api/leads/${selected.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -1239,6 +1312,7 @@ function AdminPage() {
     }
     const data = await response.json() as { lead: CrmLead };
     setSelected(data.lead);
+    setPendingStatus(data.lead.status);
     await loadLeads();
     await openLead(data.lead);
   };
@@ -1347,8 +1421,9 @@ function AdminPage() {
            </form>
            <div className="mt-6 divide-y divide-[#edf1f5]">{team.map((member) => { const selectedRole = pendingRoles[member.id] || member.role; const roleChanged = selectedRole !== member.role; return <div key={member.id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-center gap-3"><span className={`flex h-9 w-9 items-center justify-center rounded-full ${member.active ? 'bg-[#eef8f8] text-[#587f82]' : 'bg-[#f5f7fa] text-[#9caac0]'}`}><Shield className="h-4 w-4" /></span><div><p className="text-sm font-bold">{member.name}</p><p className="text-xs text-[#7a8799]">{member.email} · {CRM_ROLE_LABELS[member.role] || member.role} · {member.active ? 'Ativo' : 'Desativado'}</p></div></div><div className="flex flex-wrap justify-end gap-2"><select disabled={member.id === crmUser?.id || !manageableRoles.includes(member.role)} value={selectedRole} onChange={(event) => setPendingRoles({ ...pendingRoles, [member.id]: event.target.value as CrmRole })} className="rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3 py-2 text-xs font-bold">{manageableRoles.includes(member.role) ? manageableRoles.map((key) => <option key={key} value={key}>{CRM_ROLE_LABELS[key]}</option>) : <option value={member.role}>{CRM_ROLE_LABELS[member.role] || member.role}</option>}</select>{roleChanged && <button type="button" onClick={() => void updateTeamUser(member, { role: selectedRole })} className="rounded-lg bg-[#202f4d] px-3 py-2 text-xs font-extrabold text-white">Salvar</button>}<button type="button" disabled={member.id === crmUser?.id || !manageableRoles.includes(member.role)} onClick={() => void updateTeamUser(member, { active: !Boolean(member.active) })} className="rounded-lg border border-[#c3d1df] px-3 py-2 text-xs font-bold">{member.active ? 'Desativar' : 'Ativar'}</button><button type="button" disabled={member.id === crmUser?.id || !manageableRoles.includes(member.role)} onClick={() => void deleteTeamUser(member)} className="rounded-lg border border-[#e4b1aa] px-3 py-2 text-xs font-bold text-[#9d4b43]">Excluir</button></div></div>})}</div>
          </div>}
-         {selected && ['owner', 'admin', 'manager'].includes(crmUser?.role || '') && <section className="mb-6 rounded-2xl border border-[#d9e0e9] bg-white p-5 shadow-[0_12px_30px_rgba(32,47,77,.05)]"><div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#58739f]">/ responsabilidade comercial</p><h2 className="mt-2 font-display text-xl font-semibold">Consultor responsável</h2><p className="mt-1 text-xs text-[#56657d]">Defina quem acompanha este lead. A alteração só será aplicada ao clicar em Salvar.</p></div><div className="flex w-full gap-2 sm:w-auto"><select value={pendingAssignment === undefined ? (selected.assignedUserId ?? '') : (pendingAssignment ?? '')} onChange={(event) => setPendingAssignment(event.target.value ? Number(event.target.value) : null)} className="min-w-0 flex-1 rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3 py-2.5 text-sm outline-none sm:w-64"><option value="">Sem consultor atribuído</option>{team.filter((member) => member.role === 'operator' && Boolean(member.active)).map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}</select>{(pendingAssignment !== undefined && pendingAssignment !== selected.assignedUserId) && <button type="button" onClick={() => void updateAssignment(pendingAssignment)} className="rounded-lg bg-[#202f4d] px-4 py-2.5 text-xs font-extrabold text-white">Salvar</button>}</div></div></section>}
-          {selected && ['owner', 'admin'].includes(crmUser?.role || '') && <section className="mb-6 flex flex-col gap-3 rounded-2xl border border-[#efd1cd] bg-[#fff9f8] p-5 shadow-[0_12px_30px_rgba(32,47,77,.04)] sm:flex-row sm:items-center sm:justify-between"><div><p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#a55a52]">/ ação restrita</p><h2 className="mt-2 font-display text-xl font-semibold">Excluir lead</h2><p className="mt-1 text-xs text-[#6c5b61]">Remove este lead, as observações e o histórico. Essa ação não pode ser desfeita.</p></div><button type="button" onClick={() => void deleteSelectedLead()} className="flex w-fit items-center gap-2 rounded-lg border border-[#d88e85] bg-white px-4 py-3 text-xs font-extrabold text-[#9d4b43] transition-colors hover:bg-[#fff1ef]"><Trash2 className="h-3.5 w-3.5" /> Excluir lead</button></section>}
+          {selected && <section className="mb-6 rounded-2xl border border-[#d9e0e9] bg-white p-5 shadow-[0_12px_30px_rgba(32,47,77,.05)]"><div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#58739f]">/ andamento comercial</p><h2 className="mt-2 font-display text-xl font-semibold">Status do lead</h2><p className="mt-1 text-xs text-[#56657d]">Escolha o status e confirme a alteração antes de atualizar o CRM.</p></div><div className="flex w-full flex-wrap gap-2 sm:w-auto sm:flex-nowrap"><select value={pendingStatus ?? selected.status} onChange={(event) => setPendingStatus(event.target.value)} className="min-w-0 flex-1 rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3 py-2.5 text-sm outline-none sm:w-52"><option value="new">Novo</option><option value="contacted">Contato iniciado</option><option value="meeting">Reunião agendada</option><option value="proposal">Proposta enviada</option><option value="won">Ganho</option><option value="lost">Perdido</option></select><button type="button" disabled={!pendingStatus || pendingStatus === selected.status} onClick={() => void updateStatus()} className="rounded-lg bg-[#202f4d] px-4 py-2.5 text-xs font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-45">Salvar alterações</button>{['owner', 'admin'].includes(crmUser?.role || '') && <button type="button" onClick={() => void deleteSelectedLead()} className="flex items-center gap-2 rounded-lg bg-[#b8514b] px-4 py-2.5 text-xs font-extrabold text-white transition-colors hover:bg-[#9d4b43]"><Trash2 className="h-3.5 w-3.5" /> Excluir</button>}</div></div></section>}
+          {selected && (selected.objective || selected.marketingBudget) && <section className="mb-6 rounded-2xl border border-[#d9e0e9] bg-white p-5 shadow-[0_12px_30px_rgba(32,47,77,.05)]"><p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#58739f]">/ contexto informado</p><div className="mt-4 grid gap-4 sm:grid-cols-2"><div><p className="text-[10px] font-extrabold uppercase tracking-[.12em] text-[#7a8799]">Objetivo</p><p className="mt-1 text-sm font-bold text-[#202f4d]">{selected.objective ? LEAD_OBJECTIVE_LABELS[selected.objective] || selected.objective : 'Não informado'}</p></div><div><p className="text-[10px] font-extrabold uppercase tracking-[.12em] text-[#7a8799]">Investimento mensal</p><p className="mt-1 text-sm font-bold text-[#202f4d]">{selected.marketingBudget ? MARKETING_BUDGET_LABELS[selected.marketingBudget] || selected.marketingBudget : 'Não informado'}</p></div></div></section>}
+          {selected && ['owner', 'admin', 'manager'].includes(crmUser?.role || '') && <section className="mb-6 rounded-2xl border border-[#d9e0e9] bg-white p-5 shadow-[0_12px_30px_rgba(32,47,77,.05)]"><div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#58739f]">/ responsabilidade comercial</p><h2 className="mt-2 font-display text-xl font-semibold">Consultor responsável</h2><p className="mt-1 text-xs text-[#56657d]">Defina quem acompanha este lead. A alteração só será aplicada ao clicar em Salvar.</p></div><div className="flex w-full gap-2 sm:w-auto"><select value={pendingAssignment === undefined ? (selected.assignedUserId ?? '') : (pendingAssignment ?? '')} onChange={(event) => setPendingAssignment(event.target.value ? Number(event.target.value) : null)} className="min-w-0 flex-1 rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3 py-2.5 text-sm outline-none sm:w-64"><option value="">Sem consultor atribuído</option>{team.filter((member) => member.role === 'operator' && Boolean(member.active)).map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}</select>{(pendingAssignment !== undefined && pendingAssignment !== selected.assignedUserId) && <button type="button" onClick={() => void updateAssignment(pendingAssignment)} className="rounded-lg bg-[#202f4d] px-4 py-2.5 text-xs font-extrabold text-white">Salvar</button>}</div></div></section>}
          <div className="grid gap-6 lg:grid-cols-[1fr_390px]">
            <section className="overflow-hidden rounded-3xl border border-white/80 bg-white/90 shadow-[0_16px_35px_rgba(32,47,77,.08)]">
             <div className="flex items-center justify-between border-b border-[#d9e0e9] px-5 py-4"><div><p className="font-display text-lg font-semibold tracking-[-.02em]">Leads recentes</p><p className="mt-1 text-xs text-[#7a8799]">Selecione uma oportunidade para ver o contexto.</p></div><span className="hidden rounded-full bg-[#eef8f8] px-3 py-1.5 font-mono-vg text-[9px] uppercase tracking-[.12em] text-[#587f82] sm:block">{leads.length} encontrados</span></div>
@@ -1391,7 +1466,7 @@ function AdminPage() {
              <div className="flex items-start justify-between gap-4"><div><p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#58739f]">/ cadastro manual</p><h2 id="new-lead-title" className="mt-2 font-display text-3xl font-semibold tracking-[-.04em] text-[#202f4d]">Novo lead.</h2><p className="mt-2 text-sm text-[#56657d]">Registre uma oportunidade que chegou por outro canal.</p></div><button type="button" onClick={() => setManualLeadOpen(false)} aria-label="Fechar cadastro" className="rounded-full border border-[#d9e0e9] p-2 text-[#56657d] hover:border-[#202f4d]"><X className="h-4 w-4" /></button></div>
               <div className="mt-7 grid gap-4 sm:grid-cols-2">
                <label className="text-xs font-bold text-[#202f4d]">Nome<input required value={manualLead.name} onChange={(event) => setManualLead({ ...manualLead, name: event.target.value })} className="mt-1.5 w-full rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3 py-2.5 text-sm font-normal outline-none focus:border-[#58739f]" /></label>
-               <label className="text-xs font-bold text-[#202f4d]">WhatsApp<input required value={manualLead.whatsapp} onChange={(event) => setManualLead({ ...manualLead, whatsapp: event.target.value })} className="mt-1.5 w-full rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3 py-2.5 text-sm font-normal outline-none focus:border-[#58739f]" /></label>
+               <label className="text-xs font-bold text-[#202f4d]">WhatsApp<input required inputMode="numeric" maxLength={15} pattern="\(\d{2}\) \d{5}-\d{4}" value={manualLead.whatsapp} onChange={(event) => setManualLead({ ...manualLead, whatsapp: formatBrazilianWhatsApp(event.target.value) })} className="mt-1.5 w-full rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3 py-2.5 text-sm font-normal outline-none focus:border-[#58739f]" placeholder="(00) 00000-0000" /></label>
                <label className="text-xs font-bold text-[#202f4d]">E-mail<input required type="email" value={manualLead.email} onChange={(event) => setManualLead({ ...manualLead, email: event.target.value })} className="mt-1.5 w-full rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3 py-2.5 text-sm font-normal outline-none focus:border-[#58739f]" /></label>
                <label className="text-xs font-bold text-[#202f4d]">Empresa<input value={manualLead.company} onChange={(event) => setManualLead({ ...manualLead, company: event.target.value })} className="mt-1.5 w-full rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3 py-2.5 text-sm font-normal outline-none focus:border-[#58739f]" /></label>
                <label className="text-xs font-bold text-[#202f4d] sm:col-span-2">Serviço de interesse<select value={manualLead.service} onChange={(event) => setManualLead({ ...manualLead, service: event.target.value })} className="mt-1.5 w-full rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3 py-2.5 text-sm font-normal outline-none focus:border-[#58739f]"><option value="">Não informado</option>{SERVICES.map((service) => <option key={service.slug} value={service.slug}>{service.label}</option>)}</select></label>
@@ -1446,6 +1521,13 @@ function Home() {
     { number: '02', label: 'Sistemas', title: 'Conectar as ferramentas.', text: 'Organizamos site, CRM, dados e canais para o marketing não depender de improviso.', tone: 'bg-[#d7bd91]', textTone: 'text-[#202f4d]' },
     { number: '03', label: 'Processos', title: 'Fazer acontecer melhor.', text: 'Estruturamos rotinas, prioridades e indicadores para transformar esforço em consistência.', tone: 'bg-[#9fd6d7]', textTone: 'text-[#202f4d]' },
     { number: '04', label: 'Pessoas', title: 'Dar direção ao time.', text: 'Selecionamos, treinamos e lideramos as pessoas certas para o próximo estágio.', tone: 'bg-[#202f4d]', textTone: 'text-white' },
+  ];
+  const businessNeeds = [
+    { title: 'Quero vender mais pela internet', text: 'Organizamos aquisição, mídia e conversão para transformar atenção em oportunidades mais qualificadas.', service: 'trafego-pago' },
+    { title: 'Quero estruturar minha própria equipe de marketing', text: 'Montamos a base para sua empresa ter pessoas, processos e rotina próprios de marketing.', service: 'internalizacao-de-marketing' },
+    { title: 'Quero treinar e capacitar meu time atual', text: 'Damos direção prática para o time executar com mais critério, autonomia e consistência.', service: 'internalizacao-de-marketing' },
+    { title: 'Quero um marketing gerenciado pela VG', text: 'Assumimos a liderança estratégica e a cadência do marketing como uma extensão do seu negócio.', service: 'manager-as-a-service' },
+    { title: 'Quero fortalecer minha marca e presença', text: 'Ajustamos a forma como sua marca é percebida e traduzimos essa direção em presença contínua.', service: 'branding' },
   ];
   return (
     <div className="site-shell art-directed overflow-hidden">
@@ -1540,6 +1622,21 @@ function Home() {
                 <div className="absolute -bottom-12 -right-8 h-32 w-32 rounded-full border border-current/10" />
               </article>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="border-y border-[#b8c6d7] bg-[#e6edf4]">
+        <div className="mx-auto max-w-7xl px-5 py-20 lg:px-10 lg:py-28">
+          <div className="mb-12 flex flex-col justify-between gap-5 md:flex-row md:items-end">
+            <DarkSectionHeading eyebrow="/ seu próximo passo" title={<>Qual mudança o seu negócio<br />precisa fazer <span className="text-[#58739f]">agora?</span></>} />
+            <p className="max-w-xs text-sm leading-6 text-[#56657d]">Cada necessidade abre uma conversa diferente — e aponta para uma frente de atuação da VG.</p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {businessNeeds.map((need, index) => {
+              const service = serviceBySlug(need.service);
+              return <article key={need.title} className="group flex min-h-[230px] flex-col justify-between rounded-2xl border border-[#cbd7e3] bg-[#f8fafc] p-6 transition-all hover:-translate-y-1 hover:border-[#58739f] hover:shadow-[0_16px_35px_rgba(32,47,77,.1)]"><div><span className="font-mono-vg text-[10px] tracking-[.15em] text-[#58739f]">0{index + 1} / NECESSIDADE</span><h3 className="mt-5 max-w-xs font-display text-2xl font-semibold leading-[1.02] tracking-[-.03em] text-[#202f4d]">{need.title}</h3><p className="mt-4 max-w-sm text-sm leading-6 text-[#56657d]">{need.text}</p></div>{service && <Link href={`/servicos/${service.slug}`} className="mt-7 flex items-center gap-2 text-xs font-extrabold text-[#202f4d] transition-colors group-hover:text-[#58739f]">Conheça {service.label} <ArrowUpRightIcon className="text-current" /></Link>}</article>;
+            })}
           </div>
         </div>
       </section>

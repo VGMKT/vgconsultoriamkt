@@ -12,6 +12,7 @@ import {
 } from "./middlewares/clerkProxyMiddleware";
 
 const app: Express = express();
+app.set("trust proxy", 1);
 
 app.use((req, res, next) => {
   const forwardedProtocol = req.headers["x-forwarded-proto"];
