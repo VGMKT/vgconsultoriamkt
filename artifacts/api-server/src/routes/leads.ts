@@ -1,5 +1,5 @@
 import { Router, type IRouter } from 'express';
-import { and, desc, eq, gte, ilike, isNull, or, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, ilike, isNull, lt, or, sql } from 'drizzle-orm';
 import { db } from '@workspace/db';
 import { crmUsersTable, leadActivitiesTable, leadNotesTable, leadsTable, leadSources, leadStatuses, manualLeadSources, type LeadSource, type LeadStatus } from '@workspace/db/schema';
 import { requireCrmUser, requireRole, type AuthenticatedRequest } from '../middleware/require-auth';
@@ -8,10 +8,18 @@ import { z } from 'zod';
 
 const router: IRouter = Router();
 const leadIdSchema = z.coerce.number().int().positive();
+function isValidBrazilianWhatsApp(value: string) {
+  const digits = value.replace(/\D/g, '');
+  const localNumber = digits.startsWith('55') && digits.length === 13 ? digits.slice(2) : digits;
+  return localNumber.length === 11
+    && /^[1-9]{2}9\d{8}$/.test(localNumber)
+    && !/^(\d)\1+$/.test(localNumber);
+}
+
 const publicLeadSchema = z.object({
   name: z.string().trim().min(2, 'Informe seu nome.').max(160),
   email: z.string().trim().email('Informe um e-mail válido.').max(320),
-  whatsapp: z.string().trim().min(8, 'Informe um WhatsApp válido.').max(40),
+  whatsapp: z.string().trim().min(8, 'Informe um WhatsApp válido.').max(40).refine(isValidBrazilianWhatsApp, 'Informe um WhatsApp brasileiro válido com DDD.'),
   company: z.string().trim().max(180).optional().nullable(),
   service: z.string().trim().max(100).optional().nullable(),
   message: z.string().trim().max(5000).optional().nullable(),
@@ -40,8 +48,17 @@ const leadFiltersSchema = z.object({
 }).strict();
 
 const reportPeriodSchema = z.object({
-  period: z.enum(['30', '90', 'all']).optional().default('30'),
-}).strict();
+  period: z.enum(['30', '90', 'all', 'custom']).optional().default('30'),
+  from: z.string().date().optional(),
+  to: z.string().date().optional(),
+}).strict().superRefine((data, context) => {
+  if (data.period === 'custom' && (!data.from || !data.to)) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ['period'], message: 'Informe as datas inicial e final.' });
+  }
+  if (data.from && data.to && data.from > data.to) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ['to'], message: 'A data final deve ser igual ou posterior à inicial.' });
+  }
+});
 
 const updateLeadSchema = z.object({
   status: z.enum(leadStatuses).optional(),
@@ -211,7 +228,12 @@ router.get('/leads/reports', async (req: AuthenticatedRequest, res, next) => {
     if (req.crmUser?.role === 'operator' && req.crmUser.id) {
       filters.push(eq(leadsTable.assignedUserId, req.crmUser.id));
     }
-    if (period !== 'all') {
+    if (period === 'custom' && parsed.data.from && parsed.data.to) {
+      const from = new Date(`${parsed.data.from}T00:00:00.000Z`);
+      const toExclusive = new Date(`${parsed.data.to}T00:00:00.000Z`);
+      toExclusive.setUTCDate(toExclusive.getUTCDate() + 1);
+      filters.push(gte(leadsTable.createdAt, from), lt(leadsTable.createdAt, toExclusive));
+    } else if (period !== 'all') {
       const days = Number(period);
       const since = new Date();
       since.setDate(since.getDate() - days);

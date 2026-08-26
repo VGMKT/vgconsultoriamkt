@@ -729,6 +729,12 @@ function detectLeadSource(): CrmSource {
   return 'site';
 }
 
+function isValidBrazilianWhatsApp(value: string) {
+  const digits = value.replace(/\D/g, '');
+  const localNumber = digits.startsWith('55') && digits.length === 13 ? digits.slice(2) : digits;
+  return localNumber.length === 11 && /^[1-9]{2}9\d{8}$/.test(localNumber) && !/^(\d)\1+$/.test(localNumber);
+}
+
 function ContactForm({ compact = false, serviceValue = '' }: { compact?: boolean; serviceValue?: string }) {
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
@@ -739,6 +745,10 @@ function ContactForm({ compact = false, serviceValue = '' }: { compact?: boolean
     event.preventDefault();
     if (!form.name || !form.email || !form.whatsapp || (!compact && !form.company)) {
       setError(compact ? 'Preencha seu nome, melhor e-mail e WhatsApp para continuar.' : 'Preencha nome, melhor e-mail, WhatsApp e empresa para a gente entender o contexto.');
+      return;
+    }
+    if (!isValidBrazilianWhatsApp(form.whatsapp)) {
+      setError('Informe um WhatsApp brasileiro válido com DDD. Exemplo: (11) 91234-5678.');
       return;
     }
     setError('');
@@ -843,7 +853,7 @@ type CrmNote = { id: number; body: string; createdAt: string };
 type CrmActivity = { id: number; type: string; detail: string | null; createdAt: string };
 type CrmRole = 'owner' | 'admin' | 'manager' | 'operator';
 type CrmUser = { id: number; clerkUserId: string | null; email: string; name: string; role: CrmRole; active: number; lastSeenAt: string | null; updatedAt: string };
-type ReportPeriod = '30' | '90' | 'all';
+type ReportPeriod = '30' | '90' | 'all' | 'custom';
 type CrmReport = {
   period: ReportPeriod;
   totalLeads: number;
@@ -1052,6 +1062,8 @@ function AdminPage() {
   const [reportsOpen, setReportsOpen] = useState(false);
   const [reportsLoading, setReportsLoading] = useState(false);
   const [reportPeriod, setReportPeriod] = useState<ReportPeriod>('30');
+  const [reportFrom, setReportFrom] = useState('');
+  const [reportTo, setReportTo] = useState('');
   const [reports, setReports] = useState<CrmReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -1100,10 +1112,16 @@ function AdminPage() {
     }
   };
 
-  const loadReports = async (period = reportPeriod) => {
+  const loadReports = async (period = reportPeriod, from = reportFrom, to = reportTo) => {
+    if (period === 'custom' && (!from || !to)) return;
     setReportsLoading(true);
     try {
-      const response = await apiFetch(`/api/leads/reports?period=${period}`);
+      const params = new URLSearchParams({ period });
+      if (period === 'custom') {
+        params.set('from', from);
+        params.set('to', to);
+      }
+      const response = await apiFetch(`/api/leads/reports?${params.toString()}`);
       if (!response.ok) throw new Error('reports-failed');
       setReports(await response.json() as CrmReport);
     } catch {
@@ -1260,6 +1278,10 @@ function AdminPage() {
 
   const createManualLead = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!isValidBrazilianWhatsApp(manualLead.whatsapp)) {
+      setError('Informe um WhatsApp brasileiro válido com DDD. Exemplo: (11) 91234-5678.');
+      return;
+    }
     setSavingLead(true);
     try {
       const response = await apiFetch('/api/leads/manual', {
@@ -1337,15 +1359,15 @@ function AdminPage() {
             </div>
               {loading ? <p className="p-8 text-sm text-[#56657d]">Carregando leads...</p> : leads.length === 0 ? <div className="flex min-h-[300px] flex-col items-center justify-center px-6 py-12 text-center"><div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e8f7f7] text-[#4aaeb2]"><BarChart3 className="h-6 w-6" /></div><p className="mt-5 font-display text-2xl font-semibold">{crmUser?.role === 'operator' ? '0 leads atribuídos' : 'Nenhum lead encontrado'}</p><p className="mt-2 max-w-sm text-sm leading-6 text-[#687890]">{crmUser?.role === 'operator' ? 'Quando uma oportunidade for direcionada para você, ela aparecerá aqui.' : 'Os novos contatos do site aparecerão aqui.'}</p></div> : <div className="divide-y divide-[#edf1f5]">{leads.map((lead) => <button type="button" key={lead.id} onClick={() => void openLead(lead)} className={`flex w-full items-start justify-between gap-4 p-5 text-left transition-colors hover:bg-[#f5f7fa] ${selected?.id === lead.id ? 'bg-[#eef8f8]' : ''}`}><div className="min-w-0"><p className="truncate font-bold">{lead.name}</p><p className="mt-1 truncate text-sm text-[#56657d]">{lead.company || lead.email}</p><p className="mt-2 text-[11px] text-[#9caac0]">{lead.service ? serviceBySlug(lead.service)?.label || lead.service : 'Serviço não informado'} · {formatDate(lead.createdAt)}</p></div><div className="flex shrink-0 flex-wrap justify-end gap-1.5"><span className="rounded-full bg-[#e6edf4] px-2.5 py-1 text-[10px] font-extrabold text-[#58739f]">{CRM_STATUS_LABELS[lead.status] || lead.status}</span><span className="rounded-full bg-[#eef8f8] px-2.5 py-1 text-[10px] font-extrabold text-[#587f82]">{CRM_SOURCE_LABELS[lead.source] || lead.source}</span></div></button>)}</div>}
           </section>
-            <aside className="rounded-3xl border border-[#304466] bg-[linear-gradient(145deg,#202f4d_0%,#142744_100%)] p-7 text-white shadow-[0_16px_35px_rgba(32,47,77,.18)]">
-               {!selected ? <div className="flex min-h-[360px] flex-col justify-center"><div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#9fe4e5] text-[#202f4d]"><BarChart3 className="h-5 w-5" /></div><p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#9fe4e5]">/ detalhe do lead</p><h2 className="mt-3 font-display text-3xl font-semibold">Nenhuma oportunidade selecionada</h2></div> : <div><div className="flex items-start justify-between gap-3"><div><p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#9fe4e5]">/ lead #{selected.id}</p><div className="mt-3 flex flex-wrap items-center gap-2"><h2 className="font-display text-3xl font-semibold">{selected.name}</h2><span className="rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-extrabold text-slate-300">{CRM_SOURCE_LABELS[selected.source] || selected.source}</span></div><div className="mt-3 flex flex-wrap gap-1.5"><span className="rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-extrabold text-[#9fe4e5]">{CRM_STATUS_LABELS[selected.status] || selected.status}</span></div></div><button type="button" onClick={() => setSelected(null)} aria-label="Fechar detalhes" className="rounded-full border border-white/20 p-2 text-slate-300 hover:border-[#9fe4e5] hover:text-[#9fe4e5]"><X className="h-4 w-4" /></button></div><div className="mt-6 space-y-2 border-y border-white/10 py-5 text-sm"><p className="text-slate-300">{selected.company || 'Empresa não informada'}</p><a href={`mailto:${selected.email}`} className="block text-[#9fe4e5]">{selected.email}</a><a href={`tel:${selected.whatsapp}`} className="block text-[#9fe4e5]">{selected.whatsapp}</a><p className="pt-2 text-xs text-slate-400">{selected.service ? serviceBySlug(selected.service)?.label || selected.service : 'Serviço não informado'}</p></div><label className="mt-5 block text-[10px] font-extrabold uppercase tracking-[.15em] text-[#9fe4e5]">Status<select value={selected.status} onChange={(event) => void updateStatus(event.target.value)} className="mt-2 w-full rounded-lg border border-white/15 bg-[#263758] px-3 py-3 text-sm font-semibold normal-case tracking-normal text-white outline-none"><option value="new">Novo</option><option value="contacted">Contato iniciado</option><option value="meeting">Reunião agendada</option><option value="proposal">Proposta enviada</option><option value="won">Ganho</option><option value="lost">Perdido</option></select></label>{selected.message && <div className="mt-5 rounded-lg bg-white/5 p-4 text-sm leading-6 text-slate-300"><p className="mb-2 font-mono-vg text-[9px] uppercase tracking-[.16em] text-slate-500">Mensagem</p>{selected.message}</div>}<form onSubmit={addNote} className="mt-6"><label htmlFor="crm-note" className="font-mono-vg text-[10px] uppercase tracking-[.16em] text-[#9fe4e5]">Nova observação</label><textarea id="crm-note" value={note} onChange={(event) => setNote(event.target.value)} rows={3} placeholder="Registre o próximo passo..." className="mt-2 w-full resize-none rounded-lg border border-white/15 bg-[#263758] px-3 py-3 text-sm text-white placeholder:text-slate-500 outline-none focus:border-[#9fe4e5]" /><button type="submit" className="mt-2 rounded-lg bg-[#9fe4e5] px-4 py-2.5 text-xs font-extrabold text-[#202f4d]">Salvar observação</button></form>{notes.length > 0 && <div className="mt-6 border-t border-white/10 pt-5"><p className="font-mono-vg text-[10px] uppercase tracking-[.16em] text-[#9fe4e5]">Observações</p>{notes.map((item) => <div key={item.id} className="mt-3 border-l-2 border-[#9fe4e5] pl-3 text-sm leading-6 text-slate-300"><p>{item.body}</p><p className="mt-1 text-[10px] text-slate-500">{formatDate(item.createdAt)}</p></div>)}</div>}{activities.length > 0 && <div className="mt-6 border-t border-white/10 pt-5"><p className="font-mono-vg text-[10px] uppercase tracking-[.16em] text-slate-500">Histórico</p>{activities.slice(0, 5).map((item) => <p key={item.id} className="mt-2 text-xs text-slate-400">{item.detail} · {formatDate(item.createdAt)}</p>)}</div>}</div>}
+             <aside className="relative overflow-hidden rounded-[2rem] border border-[#304466] bg-[linear-gradient(145deg,#202f4d_0%,#142744_100%)] text-white shadow-[0_16px_35px_rgba(32,47,77,.18)]">
+                {!selected ? <div className="flex min-h-[360px] flex-col justify-center p-7"><div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#9fe4e5] text-[#202f4d]"><BarChart3 className="h-5 w-5" /></div><p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#9fe4e5]">/ detalhe do lead</p><h2 className="mt-3 font-display text-3xl font-semibold">Nenhuma oportunidade selecionada</h2></div> : <div><div className="border-b border-white/10 bg-white/[.04] px-7 py-6"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#9fe4e5]">/ lead #{selected.id}</p><div className="mt-3 flex flex-wrap items-center gap-2"><h2 className="max-w-[calc(100%-2.5rem)] font-display text-3xl font-semibold leading-tight">{selected.name}</h2><span className="rounded-full bg-[#9fe4e5]/15 px-2.5 py-1 text-[10px] font-extrabold text-[#9fe4e5]">{CRM_SOURCE_LABELS[selected.source] || selected.source}</span></div><div className="mt-3 flex flex-wrap gap-1.5"><span className="rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-extrabold text-[#9fe4e5]">{CRM_STATUS_LABELS[selected.status] || selected.status}</span></div></div><button type="button" onClick={() => setSelected(null)} aria-label="Fechar detalhes" className="shrink-0 rounded-full border border-white/20 p-2 text-slate-300 hover:border-[#9fe4e5] hover:text-[#9fe4e5]"><X className="h-4 w-4" /></button></div></div><div className="space-y-2 border-b border-white/10 px-7 py-6 text-sm"><p className="text-slate-300">{selected.company || 'Empresa não informada'}</p><a href={`mailto:${selected.email}`} className="block text-[#9fe4e5]">{selected.email}</a><a href={`tel:${selected.whatsapp}`} className="block text-[#9fe4e5]">{selected.whatsapp}</a><p className="pt-2 text-xs text-slate-400">{selected.service ? serviceBySlug(selected.service)?.label || selected.service : 'Serviço não informado'}</p></div><label className="block px-7 pt-6 text-[10px] font-extrabold uppercase tracking-[.15em] text-[#9fe4e5]">Status<select value={selected.status} onChange={(event) => void updateStatus(event.target.value)} className="mt-2 w-full rounded-lg border border-white/15 bg-[#263758] px-3 py-3 text-sm font-semibold normal-case tracking-normal text-white outline-none"><option value="new">Novo</option><option value="contacted">Contato iniciado</option><option value="meeting">Reunião agendada</option><option value="proposal">Proposta enviada</option><option value="won">Ganho</option><option value="lost">Perdido</option></select></label>{selected.message && <div className="mx-7 mt-6 rounded-xl bg-white/[.06] p-4 text-sm leading-6 text-slate-300"><p className="mb-2 font-mono-vg text-[9px] uppercase tracking-[.16em] text-slate-500">Mensagem</p>{selected.message}</div>}<form onSubmit={addNote} className="mx-7 mt-6"><label htmlFor="crm-note" className="font-mono-vg text-[10px] uppercase tracking-[.16em] text-[#9fe4e5]">Nova observação</label><textarea id="crm-note" value={note} onChange={(event) => setNote(event.target.value)} rows={3} placeholder="Registre o próximo passo..." className="mt-2 w-full resize-none rounded-xl border border-white/15 bg-[#263758] px-3 py-3 text-sm text-white placeholder:text-slate-500 outline-none focus:border-[#9fe4e5]" /><button type="submit" className="mt-3 rounded-lg bg-[#9fe4e5] px-4 py-2.5 text-xs font-extrabold text-[#202f4d]">Salvar observação</button></form>{notes.length > 0 && <div className="mt-6 border-t border-white/10 px-7 pb-1 pt-6"><p className="font-mono-vg text-[10px] uppercase tracking-[.16em] text-[#9fe4e5]">Observações</p>{notes.map((item) => <div key={item.id} className="mt-3 border-l-2 border-[#9fe4e5] pl-3 text-sm leading-6 text-slate-300"><p>{item.body}</p><p className="mt-1 text-[10px] text-slate-500">{formatDate(item.createdAt)}</p></div>)}</div>}{activities.length > 0 && <div className="mt-6 border-t border-white/10 px-7 pb-6 pt-6"><p className="font-mono-vg text-[10px] uppercase tracking-[.16em] text-slate-500">Histórico</p>{activities.slice(0, 5).map((item) => <p key={item.id} className="mt-2 text-xs text-slate-400">{item.detail} · {formatDate(item.createdAt)}</p>)}</div>}</div>}
           </aside>
          </div>
           {reportsOpen && <div className="fixed inset-0 z-50 overflow-y-auto bg-[#061a36]/70 px-5 py-8" role="dialog" aria-modal="true" aria-labelledby="reports-title">
             <section className="mx-auto w-full max-w-6xl rounded-3xl bg-[#f5f7fa] p-5 shadow-2xl sm:p-8">
               <div className="flex flex-col gap-4 border-b border-[#d9e0e9] pb-6 sm:flex-row sm:items-start sm:justify-between">
-                <div><p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#58739f]">/ inteligência comercial</p><h2 id="reports-title" className="mt-2 font-display text-3xl font-semibold tracking-[-.04em] text-[#202f4d]">Relatórios do CRM</h2><p className="mt-2 max-w-2xl text-sm text-[#56657d]">Acompanhe o funil, as origens e os responsáveis sem alterar os dados de aquisição.</p></div>
-                <div className="flex items-center gap-2"><label className="sr-only" htmlFor="report-period">Período do relatório</label><select id="report-period" value={reportPeriod} onChange={(event) => { const nextPeriod = event.target.value as ReportPeriod; setReportPeriod(nextPeriod); void loadReports(nextPeriod); }} className="rounded-lg border border-[#c3d1df] bg-white px-3 py-2.5 text-sm font-semibold text-[#202f4d] outline-none"><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="all">Todo o período</option></select><button type="button" onClick={() => setReportsOpen(false)} aria-label="Fechar relatórios" className="rounded-full border border-[#d9e0e9] bg-white p-2 text-[#56657d] hover:border-[#202f4d]"><X className="h-4 w-4" /></button></div>
+                <div><p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#58739f]">/ inteligência comercial</p><h2 id="reports-title" className="mt-2 font-display text-3xl font-semibold tracking-[-.04em] text-[#202f4d]">Relatórios do CRM</h2></div>
+                <div className="flex flex-wrap items-center justify-end gap-2"><label className="sr-only" htmlFor="report-period">Período do relatório</label><select id="report-period" value={reportPeriod} onChange={(event) => { const nextPeriod = event.target.value as ReportPeriod; setReportPeriod(nextPeriod); if (nextPeriod !== 'custom') void loadReports(nextPeriod); }} className="rounded-lg border border-[#c3d1df] bg-white px-3 py-2.5 text-sm font-semibold text-[#202f4d] outline-none"><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="all">Todo o período</option><option value="custom">Personalizado</option></select>{reportPeriod === 'custom' && <><label className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-[.12em] text-[#58739f]">De<input type="date" value={reportFrom} onChange={(event) => setReportFrom(event.target.value)} className="rounded-lg border border-[#c3d1df] bg-white px-2 py-2 text-xs font-semibold normal-case tracking-normal text-[#202f4d] outline-none" /></label><label className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-[.12em] text-[#58739f]">Até<input type="date" value={reportTo} onChange={(event) => setReportTo(event.target.value)} className="rounded-lg border border-[#c3d1df] bg-white px-2 py-2 text-xs font-semibold normal-case tracking-normal text-[#202f4d] outline-none" /></label><button type="button" disabled={!reportFrom || !reportTo || reportFrom > reportTo} onClick={() => void loadReports('custom', reportFrom, reportTo)} className="rounded-lg bg-[#202f4d] px-3 py-2.5 text-xs font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-40">Aplicar</button></>}<button type="button" onClick={() => setReportsOpen(false)} aria-label="Fechar relatórios" className="rounded-full border border-[#d9e0e9] bg-white p-2 text-[#56657d] hover:border-[#202f4d]"><X className="h-4 w-4" /></button></div>
               </div>
               {reportsLoading ? <div className="flex min-h-72 items-center justify-center text-sm font-semibold text-[#56657d]">Carregando relatórios...</div> : !reports ? <div className="flex min-h-72 items-center justify-center text-sm font-semibold text-[#56657d]">Não foi possível carregar os dados deste período.</div> : <div className="mt-6 space-y-6">
                 <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
