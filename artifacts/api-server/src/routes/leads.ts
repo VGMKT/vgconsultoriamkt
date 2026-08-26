@@ -1,7 +1,7 @@
 import { Router, type IRouter } from 'express';
-import { and, desc, eq, ilike, isNull, or, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, ilike, isNull, or, sql } from 'drizzle-orm';
 import { db } from '@workspace/db';
-import { crmUsersTable, leadActivitiesTable, leadNotesTable, leadsTable, leadSources, leadStatuses, type LeadSource, type LeadStatus } from '@workspace/db/schema';
+import { crmUsersTable, leadActivitiesTable, leadNotesTable, leadsTable, leadSources, leadStatuses, manualLeadSources, type LeadSource, type LeadStatus } from '@workspace/db/schema';
 import { requireCrmUser, requireRole, type AuthenticatedRequest } from '../middleware/require-auth';
 import { logger } from '../lib/logger';
 import { z } from 'zod';
@@ -27,12 +27,20 @@ const publicLeadSchema = z.object({
   landing_page: z.string().trim().max(2000).optional().nullable(),
 }).strict();
 
+const manualLeadSchema = publicLeadSchema.extend({
+  source: z.enum(manualLeadSources).optional(),
+});
+
 const leadFiltersSchema = z.object({
   status: z.enum(leadStatuses).optional(),
   source: z.enum(leadSources).optional(),
   search: z.string().trim().max(100, 'A busca deve ter no máximo 100 caracteres.').optional().default(''),
   page: z.coerce.number().int().min(1).max(100000).optional().default(1),
   limit: z.coerce.number().int().min(1).max(100).optional().default(25),
+}).strict();
+
+const reportPeriodSchema = z.object({
+  period: z.enum(['30', '90', 'all']).optional().default('30'),
 }).strict();
 
 const updateLeadSchema = z.object({
@@ -127,7 +135,7 @@ router.use('/leads', requireCrmUser);
 
 router.post('/leads/manual', requireRole('owner', 'admin', 'manager', 'operator'), async (req: AuthenticatedRequest, res, next) => {
   try {
-    const parsed = publicLeadSchema.safeParse(req.body);
+    const parsed = manualLeadSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: 'Preencha nome, e-mail e WhatsApp corretamente.', details: parsed.error.flatten() });
       return;
@@ -190,6 +198,88 @@ router.get('/leads', async (req: AuthenticatedRequest, res, next) => {
   }
 });
 
+router.get('/leads/reports', async (req: AuthenticatedRequest, res, next) => {
+  try {
+    const parsed = reportPeriodSchema.safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Período de relatório inválido.', details: parsed.error.flatten() });
+      return;
+    }
+
+    const { period } = parsed.data;
+    const filters = [];
+    if (req.crmUser?.role === 'operator' && req.crmUser.id) {
+      filters.push(eq(leadsTable.assignedUserId, req.crmUser.id));
+    }
+    if (period !== 'all') {
+      const days = Number(period);
+      const since = new Date();
+      since.setDate(since.getDate() - days);
+      filters.push(gte(leadsTable.createdAt, since));
+    }
+
+    const reportLeads = await db.select({
+      status: leadsTable.status,
+      source: leadsTable.source,
+      assignedUserId: leadsTable.assignedUserId,
+    }).from(leadsTable).where(filters.length ? and(...filters) : undefined);
+    const consultants = await db.select({ id: crmUsersTable.id, name: crmUsersTable.name }).from(crmUsersTable);
+    const consultantNames = new Map(consultants.map((consultant) => [consultant.id, consultant.name]));
+
+    const statusCounts = Object.fromEntries(leadStatuses.map((status) => [status, 0])) as Record<LeadStatus, number>;
+    const sourceCounts = new Map<string, { source: string; total: number; won: number }>();
+    const consultantCounts = new Map<number, { consultantId: number; name: string; total: number; won: number }>();
+    let unassigned = 0;
+
+    for (const lead of reportLeads) {
+      const status = lead.status as LeadStatus;
+      if (status in statusCounts) statusCounts[status] += 1;
+
+      const source = lead.source || 'other';
+      const sourceRow = sourceCounts.get(source) || { source, total: 0, won: 0 };
+      sourceRow.total += 1;
+      if (status === 'won') sourceRow.won += 1;
+      sourceCounts.set(source, sourceRow);
+
+      if (lead.assignedUserId === null) {
+        unassigned += 1;
+      } else {
+        const consultantRow = consultantCounts.get(lead.assignedUserId) || {
+          consultantId: lead.assignedUserId,
+          name: consultantNames.get(lead.assignedUserId) || 'Consultor removido',
+          total: 0,
+          won: 0,
+        };
+        consultantRow.total += 1;
+        if (status === 'won') consultantRow.won += 1;
+        consultantCounts.set(lead.assignedUserId, consultantRow);
+      }
+    }
+
+    const totalLeads = reportLeads.length;
+    const wonLeads = statusCounts.won;
+    const openLeads = totalLeads - wonLeads - statusCounts.lost;
+    const toConversionRow = <T extends { total: number; won: number }>(row: T) => ({
+      ...row,
+      conversionRate: row.total ? Math.round((row.won / row.total) * 1000) / 10 : 0,
+    });
+
+    res.json({
+      period,
+      totalLeads,
+      wonLeads,
+      openLeads,
+      conversionRate: totalLeads ? Math.round((wonLeads / totalLeads) * 1000) / 10 : 0,
+      byStatus: leadStatuses.map((status) => ({ status, count: statusCounts[status] })),
+      bySource: [...sourceCounts.values()].map(toConversionRow).sort((a, b) => b.total - a.total),
+      byConsultant: [...consultantCounts.values()].map(toConversionRow).sort((a, b) => b.total - a.total),
+      unassigned,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get('/leads/:id', async (req, res, next) => {
   try {
     const parsedId = parseLeadId(req.params.id);
@@ -208,6 +298,34 @@ router.get('/leads/:id', async (req, res, next) => {
       db.select().from(leadActivitiesTable).where(eq(leadActivitiesTable.leadId, id)).orderBy(desc(leadActivitiesTable.createdAt)),
     ]);
     res.json({ lead, notes, activities });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete('/leads/:id', requireRole('owner', 'admin'), async (req: AuthenticatedRequest, res, next) => {
+  try {
+    const parsedId = parseLeadId(req.params.id);
+    if (!parsedId.success) {
+      res.status(400).json({ error: 'ID de lead inválido.' });
+      return;
+    }
+
+    const id = parsedId.data;
+    const [existingLead] = await db.select({ id: leadsTable.id, name: leadsTable.name }).from(leadsTable).where(eq(leadsTable.id, id));
+    if (!existingLead) {
+      res.status(404).json({ error: 'Lead não encontrado.' });
+      return;
+    }
+
+    await db.transaction(async (tx) => {
+      await tx.delete(leadNotesTable).where(eq(leadNotesTable.leadId, id));
+      await tx.delete(leadActivitiesTable).where(eq(leadActivitiesTable.leadId, id));
+      await tx.delete(leadsTable).where(eq(leadsTable.id, id));
+    });
+
+    logger.info({ event: 'lead.deleted', leadId: id, leadName: existingLead.name, actorId: req.userId }, 'Lead deleted');
+    res.status(204).send();
   } catch (error) {
     next(error);
   }

@@ -1,5 +1,5 @@
 import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
-import { ArrowDownRight, ArrowRight, BarChart3, Check, ChevronDown, CircleCheck, Compass, Crosshair, Instagram, Linkedin, Menu, MoveUpRight, Play, Plus, Quote, Shield, Sparkles, Target, UserCog, X, Zap } from 'lucide-react';
+import { ArrowDownRight, ArrowRight, BarChart3, Check, ChevronDown, CircleCheck, Compass, Crosshair, Instagram, Linkedin, Menu, MoveUpRight, Play, Plus, Quote, Shield, Sparkles, Target, Trash2, UserCog, X, Zap } from 'lucide-react';
 import { Link, Redirect, Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ClerkProvider, useAuth, useClerk, useUser } from '@clerk/react';
@@ -638,10 +638,17 @@ const CRM_SOURCE_LABELS: Record<string, string> = {
   site: 'Site',
   manual: 'Manual',
   referral: 'Indicação',
+  active_offer: 'Oferta ativa',
   other: 'Outro',
 };
 const CRM_SOURCE_OPTIONS = Object.entries(CRM_SOURCE_LABELS);
 type CrmSource = keyof typeof CRM_SOURCE_LABELS;
+const MANUAL_LEAD_SOURCE_OPTIONS: Array<[CrmSource, string]> = [
+  ['manual', CRM_SOURCE_LABELS.manual],
+  ['referral', CRM_SOURCE_LABELS.referral],
+  ['active_offer', CRM_SOURCE_LABELS.active_offer],
+  ['other', CRM_SOURCE_LABELS.other],
+];
 
 type LeadAttribution = {
   utm_source?: string;
@@ -836,6 +843,18 @@ type CrmNote = { id: number; body: string; createdAt: string };
 type CrmActivity = { id: number; type: string; detail: string | null; createdAt: string };
 type CrmRole = 'owner' | 'admin' | 'manager' | 'operator';
 type CrmUser = { id: number; clerkUserId: string | null; email: string; name: string; role: CrmRole; active: number; lastSeenAt: string | null; updatedAt: string };
+type ReportPeriod = '30' | '90' | 'all';
+type CrmReport = {
+  period: ReportPeriod;
+  totalLeads: number;
+  wonLeads: number;
+  openLeads: number;
+  conversionRate: number;
+  byStatus: Array<{ status: string; count: number }>;
+  bySource: Array<{ source: string; total: number; won: number; conversionRate: number }>;
+  byConsultant: Array<{ consultantId: number; name: string; total: number; won: number; conversionRate: number }>;
+  unassigned: number;
+};
 const CRM_ROLE_LABELS: Record<CrmRole, string> = { owner: 'Proprietário', admin: 'Administrador', manager: 'Gerente', operator: 'Consultor' };
 const CRM_STATUS_LABELS: Record<string, string> = {
   new: 'Novo',
@@ -1030,6 +1049,10 @@ function AdminPage() {
   const [manualLeadOpen, setManualLeadOpen] = useState(false);
   const [manualLead, setManualLead] = useState<ManualLeadForm>({ name: '', email: '', whatsapp: '', company: '', service: '', message: '', source: 'manual' });
   const [savingLead, setSavingLead] = useState(false);
+  const [reportsOpen, setReportsOpen] = useState(false);
+  const [reportsLoading, setReportsLoading] = useState(false);
+  const [reportPeriod, setReportPeriod] = useState<ReportPeriod>('30');
+  const [reports, setReports] = useState<CrmReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [teamMessage, setTeamMessage] = useState('');
@@ -1074,6 +1097,19 @@ function AdminPage() {
       setError('Não foi possível carregar os leads. Verifique se a API está disponível.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadReports = async (period = reportPeriod) => {
+    setReportsLoading(true);
+    try {
+      const response = await apiFetch(`/api/leads/reports?period=${period}`);
+      if (!response.ok) throw new Error('reports-failed');
+      setReports(await response.json() as CrmReport);
+    } catch {
+      setError('Não foi possível carregar os relatórios.');
+    } finally {
+      setReportsLoading(false);
     }
   };
 
@@ -1129,6 +1165,22 @@ function AdminPage() {
       return;
     }
     setTeam((current) => current.filter((item) => item.id !== member.id));
+  };
+
+  const deleteSelectedLead = async () => {
+    if (!selected || !['owner', 'admin'].includes(crmUser?.role || '')) return;
+    if (!window.confirm(`Excluir o lead "${selected.name}"? Essa ação também removerá as observações e o histórico dele.`)) return;
+    const response = await apiFetch(`/api/leads/${selected.id}`, { method: 'DELETE' });
+    if (!response.ok) {
+      setError((await response.json().catch(() => null) as { error?: string } | null)?.error || 'Não foi possível excluir o lead.');
+      return;
+    }
+    setSelected(null);
+    setNotes([]);
+    setActivities([]);
+    setPendingAssignment(undefined);
+    await loadLeads();
+    if (reportsOpen) await loadReports();
   };
 
   const manageableRoles: CrmRole[] = crmUser?.role === 'owner'
@@ -1254,6 +1306,7 @@ function AdminPage() {
            <div><div className="flex items-center gap-2 font-mono-vg text-[10px] uppercase tracking-[.2em] text-[#58739f]"><span className="h-2 w-2 rounded-full bg-[#58c5c8]" /> visão geral</div><h1 className="mt-3 font-display text-3xl font-semibold tracking-[-.05em] sm:text-5xl">Oportunidades em movimento.</h1><p className="mt-2 max-w-xl text-sm text-[#687890]">Acompanhe seus contatos e mantenha cada oportunidade avançando.</p></div>
              <div className="flex flex-wrap gap-2">
               {(crmUser?.role === 'owner' || crmUser?.role === 'admin') && <button type="button" onClick={() => setTeamOpen(true)} className="flex w-fit items-center gap-2 rounded-lg border border-[#c3d1df] bg-white px-4 py-3 text-xs font-extrabold text-[#202f4d] transition-colors hover:border-[#58739f]"><UserCog className="h-3.5 w-3.5" /> Equipe</button>}
+              <button type="button" onClick={() => { setReportsOpen(true); void loadReports(); }} className="flex w-fit items-center gap-2 rounded-lg border border-[#c3d1df] bg-white px-4 py-3 text-xs font-extrabold text-[#202f4d] transition-colors hover:border-[#58739f]"><BarChart3 className="h-3.5 w-3.5" /> Relatórios</button>
              <button type="button" onClick={() => setManualLeadOpen(true)} className="flex w-fit items-center gap-2 rounded-lg bg-[#202f4d] px-4 py-3 text-xs font-extrabold text-white shadow-[0_8px_18px_rgba(32,47,77,.16)] transition-all hover:-translate-y-0.5 hover:bg-[#58739f]"><Plus className="h-3.5 w-3.5" /> Novo lead</button>
              <button type="button" onClick={() => void loadLeads()} className="flex w-fit items-center gap-2 rounded-lg border border-[#c3d1df] bg-white px-4 py-3 text-xs font-extrabold text-[#202f4d] transition-colors hover:border-[#58739f]">Atualizar <ArrowRight className="h-3.5 w-3.5" /></button>
            </div>
@@ -1273,6 +1326,7 @@ function AdminPage() {
            <div className="mt-6 divide-y divide-[#edf1f5]">{team.map((member) => { const selectedRole = pendingRoles[member.id] || member.role; const roleChanged = selectedRole !== member.role; return <div key={member.id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-center gap-3"><span className={`flex h-9 w-9 items-center justify-center rounded-full ${member.active ? 'bg-[#eef8f8] text-[#587f82]' : 'bg-[#f5f7fa] text-[#9caac0]'}`}><Shield className="h-4 w-4" /></span><div><p className="text-sm font-bold">{member.name}</p><p className="text-xs text-[#7a8799]">{member.email} · {CRM_ROLE_LABELS[member.role] || member.role} · {member.active ? 'Ativo' : 'Desativado'}</p></div></div><div className="flex flex-wrap justify-end gap-2"><select disabled={member.id === crmUser?.id || !manageableRoles.includes(member.role)} value={selectedRole} onChange={(event) => setPendingRoles({ ...pendingRoles, [member.id]: event.target.value as CrmRole })} className="rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3 py-2 text-xs font-bold">{manageableRoles.includes(member.role) ? manageableRoles.map((key) => <option key={key} value={key}>{CRM_ROLE_LABELS[key]}</option>) : <option value={member.role}>{CRM_ROLE_LABELS[member.role] || member.role}</option>}</select>{roleChanged && <button type="button" onClick={() => void updateTeamUser(member, { role: selectedRole })} className="rounded-lg bg-[#202f4d] px-3 py-2 text-xs font-extrabold text-white">Salvar</button>}<button type="button" disabled={member.id === crmUser?.id || !manageableRoles.includes(member.role)} onClick={() => void updateTeamUser(member, { active: !Boolean(member.active) })} className="rounded-lg border border-[#c3d1df] px-3 py-2 text-xs font-bold">{member.active ? 'Desativar' : 'Ativar'}</button><button type="button" disabled={member.id === crmUser?.id || !manageableRoles.includes(member.role)} onClick={() => void deleteTeamUser(member)} className="rounded-lg border border-[#e4b1aa] px-3 py-2 text-xs font-bold text-[#9d4b43]">Excluir</button></div></div>})}</div>
          </div>}
          {selected && ['owner', 'admin', 'manager'].includes(crmUser?.role || '') && <section className="mb-6 rounded-2xl border border-[#d9e0e9] bg-white p-5 shadow-[0_12px_30px_rgba(32,47,77,.05)]"><div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#58739f]">/ responsabilidade comercial</p><h2 className="mt-2 font-display text-xl font-semibold">Consultor responsável</h2><p className="mt-1 text-xs text-[#56657d]">Defina quem acompanha este lead. A alteração só será aplicada ao clicar em Salvar.</p></div><div className="flex w-full gap-2 sm:w-auto"><select value={pendingAssignment === undefined ? (selected.assignedUserId ?? '') : (pendingAssignment ?? '')} onChange={(event) => setPendingAssignment(event.target.value ? Number(event.target.value) : null)} className="min-w-0 flex-1 rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3 py-2.5 text-sm outline-none sm:w-64"><option value="">Sem consultor atribuído</option>{team.filter((member) => member.role === 'operator' && Boolean(member.active)).map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}</select>{(pendingAssignment !== undefined && pendingAssignment !== selected.assignedUserId) && <button type="button" onClick={() => void updateAssignment(pendingAssignment)} className="rounded-lg bg-[#202f4d] px-4 py-2.5 text-xs font-extrabold text-white">Salvar</button>}</div></div></section>}
+          {selected && ['owner', 'admin'].includes(crmUser?.role || '') && <section className="mb-6 flex flex-col gap-3 rounded-2xl border border-[#efd1cd] bg-[#fff9f8] p-5 shadow-[0_12px_30px_rgba(32,47,77,.04)] sm:flex-row sm:items-center sm:justify-between"><div><p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#a55a52]">/ ação restrita</p><h2 className="mt-2 font-display text-xl font-semibold">Excluir lead</h2><p className="mt-1 text-xs text-[#6c5b61]">Remove este lead, as observações e o histórico. Essa ação não pode ser desfeita.</p></div><button type="button" onClick={() => void deleteSelectedLead()} className="flex w-fit items-center gap-2 rounded-lg border border-[#d88e85] bg-white px-4 py-3 text-xs font-extrabold text-[#9d4b43] transition-colors hover:bg-[#fff1ef]"><Trash2 className="h-3.5 w-3.5" /> Excluir lead</button></section>}
          <div className="grid gap-6 lg:grid-cols-[1fr_390px]">
            <section className="overflow-hidden rounded-3xl border border-white/80 bg-white/90 shadow-[0_16px_35px_rgba(32,47,77,.08)]">
             <div className="flex items-center justify-between border-b border-[#d9e0e9] px-5 py-4"><div><p className="font-display text-lg font-semibold tracking-[-.02em]">Leads recentes</p><p className="mt-1 text-xs text-[#7a8799]">Selecione uma oportunidade para ver o contexto.</p></div><span className="hidden rounded-full bg-[#eef8f8] px-3 py-1.5 font-mono-vg text-[9px] uppercase tracking-[.12em] text-[#587f82] sm:block">{leads.length} encontrados</span></div>
@@ -1287,7 +1341,30 @@ function AdminPage() {
                {!selected ? <div className="flex min-h-[360px] flex-col justify-center"><div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#9fe4e5] text-[#202f4d]"><BarChart3 className="h-5 w-5" /></div><p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#9fe4e5]">/ detalhe do lead</p><h2 className="mt-3 font-display text-3xl font-semibold">Nenhuma oportunidade selecionada</h2></div> : <div><div className="flex items-start justify-between gap-3"><div><p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#9fe4e5]">/ lead #{selected.id}</p><div className="mt-3 flex flex-wrap items-center gap-2"><h2 className="font-display text-3xl font-semibold">{selected.name}</h2><span className="rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-extrabold text-slate-300">{CRM_SOURCE_LABELS[selected.source] || selected.source}</span></div><div className="mt-3 flex flex-wrap gap-1.5"><span className="rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-extrabold text-[#9fe4e5]">{CRM_STATUS_LABELS[selected.status] || selected.status}</span></div></div><button type="button" onClick={() => setSelected(null)} aria-label="Fechar detalhes" className="rounded-full border border-white/20 p-2 text-slate-300 hover:border-[#9fe4e5] hover:text-[#9fe4e5]"><X className="h-4 w-4" /></button></div><div className="mt-6 space-y-2 border-y border-white/10 py-5 text-sm"><p className="text-slate-300">{selected.company || 'Empresa não informada'}</p><a href={`mailto:${selected.email}`} className="block text-[#9fe4e5]">{selected.email}</a><a href={`tel:${selected.whatsapp}`} className="block text-[#9fe4e5]">{selected.whatsapp}</a><p className="pt-2 text-xs text-slate-400">{selected.service ? serviceBySlug(selected.service)?.label || selected.service : 'Serviço não informado'}</p></div><label className="mt-5 block text-[10px] font-extrabold uppercase tracking-[.15em] text-[#9fe4e5]">Status<select value={selected.status} onChange={(event) => void updateStatus(event.target.value)} className="mt-2 w-full rounded-lg border border-white/15 bg-[#263758] px-3 py-3 text-sm font-semibold normal-case tracking-normal text-white outline-none"><option value="new">Novo</option><option value="contacted">Contato iniciado</option><option value="meeting">Reunião agendada</option><option value="proposal">Proposta enviada</option><option value="won">Ganho</option><option value="lost">Perdido</option></select></label>{selected.message && <div className="mt-5 rounded-lg bg-white/5 p-4 text-sm leading-6 text-slate-300"><p className="mb-2 font-mono-vg text-[9px] uppercase tracking-[.16em] text-slate-500">Mensagem</p>{selected.message}</div>}<form onSubmit={addNote} className="mt-6"><label htmlFor="crm-note" className="font-mono-vg text-[10px] uppercase tracking-[.16em] text-[#9fe4e5]">Nova observação</label><textarea id="crm-note" value={note} onChange={(event) => setNote(event.target.value)} rows={3} placeholder="Registre o próximo passo..." className="mt-2 w-full resize-none rounded-lg border border-white/15 bg-[#263758] px-3 py-3 text-sm text-white placeholder:text-slate-500 outline-none focus:border-[#9fe4e5]" /><button type="submit" className="mt-2 rounded-lg bg-[#9fe4e5] px-4 py-2.5 text-xs font-extrabold text-[#202f4d]">Salvar observação</button></form>{notes.length > 0 && <div className="mt-6 border-t border-white/10 pt-5"><p className="font-mono-vg text-[10px] uppercase tracking-[.16em] text-[#9fe4e5]">Observações</p>{notes.map((item) => <div key={item.id} className="mt-3 border-l-2 border-[#9fe4e5] pl-3 text-sm leading-6 text-slate-300"><p>{item.body}</p><p className="mt-1 text-[10px] text-slate-500">{formatDate(item.createdAt)}</p></div>)}</div>}{activities.length > 0 && <div className="mt-6 border-t border-white/10 pt-5"><p className="font-mono-vg text-[10px] uppercase tracking-[.16em] text-slate-500">Histórico</p>{activities.slice(0, 5).map((item) => <p key={item.id} className="mt-2 text-xs text-slate-400">{item.detail} · {formatDate(item.createdAt)}</p>)}</div>}</div>}
           </aside>
          </div>
-         {manualLeadOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#061a36]/70 px-5 py-8" role="dialog" aria-modal="true" aria-labelledby="new-lead-title">
+          {reportsOpen && <div className="fixed inset-0 z-50 overflow-y-auto bg-[#061a36]/70 px-5 py-8" role="dialog" aria-modal="true" aria-labelledby="reports-title">
+            <section className="mx-auto w-full max-w-6xl rounded-3xl bg-[#f5f7fa] p-5 shadow-2xl sm:p-8">
+              <div className="flex flex-col gap-4 border-b border-[#d9e0e9] pb-6 sm:flex-row sm:items-start sm:justify-between">
+                <div><p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#58739f]">/ inteligência comercial</p><h2 id="reports-title" className="mt-2 font-display text-3xl font-semibold tracking-[-.04em] text-[#202f4d]">Relatórios do CRM</h2><p className="mt-2 max-w-2xl text-sm text-[#56657d]">Acompanhe o funil, as origens e os responsáveis sem alterar os dados de aquisição.</p></div>
+                <div className="flex items-center gap-2"><label className="sr-only" htmlFor="report-period">Período do relatório</label><select id="report-period" value={reportPeriod} onChange={(event) => { const nextPeriod = event.target.value as ReportPeriod; setReportPeriod(nextPeriod); void loadReports(nextPeriod); }} className="rounded-lg border border-[#c3d1df] bg-white px-3 py-2.5 text-sm font-semibold text-[#202f4d] outline-none"><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="all">Todo o período</option></select><button type="button" onClick={() => setReportsOpen(false)} aria-label="Fechar relatórios" className="rounded-full border border-[#d9e0e9] bg-white p-2 text-[#56657d] hover:border-[#202f4d]"><X className="h-4 w-4" /></button></div>
+              </div>
+              {reportsLoading ? <div className="flex min-h-72 items-center justify-center text-sm font-semibold text-[#56657d]">Carregando relatórios...</div> : !reports ? <div className="flex min-h-72 items-center justify-center text-sm font-semibold text-[#56657d]">Não foi possível carregar os dados deste período.</div> : <div className="mt-6 space-y-6">
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                  {[
+                    ['Leads no período', reports.totalLeads, 'Entradas registradas'],
+                    ['Em andamento', reports.openLeads, 'Ainda sem desfecho'],
+                    ['Leads ganhos', reports.wonLeads, 'Conversões comerciais'],
+                    ['Taxa de conversão', `${reports.conversionRate.toLocaleString('pt-BR')}%`, 'Ganhos sobre o total'],
+                  ].map(([label, value, detail]) => <div key={label} className="rounded-2xl border border-white bg-white p-4 shadow-[0_8px_22px_rgba(32,47,77,.05)]"><p className="font-mono-vg text-[9px] uppercase tracking-[.14em] text-[#58739f]">{label}</p><strong className="mt-2 block font-display text-3xl tracking-[-.04em] text-[#202f4d]">{value}</strong><p className="mt-1 text-[11px] text-[#7a8799]">{detail}</p></div>)}
+                </div>
+                <div className="grid gap-6 lg:grid-cols-[.9fr_1.1fr]">
+                  <section className="rounded-2xl border border-[#d9e0e9] bg-white p-5"><p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#58739f]">/ funil comercial</p><h3 className="mt-2 font-display text-xl font-semibold text-[#202f4d]">Oportunidades por etapa</h3><div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">{reports.byStatus.map((item) => <div key={item.status} className="rounded-xl bg-[#f5f7fa] p-3"><p className="text-xs text-[#687890]">{CRM_STATUS_LABELS[item.status] || item.status}</p><strong className="mt-1 block font-display text-2xl text-[#202f4d]">{item.count}</strong></div>)}</div></section>
+                  <section className="rounded-2xl border border-[#d9e0e9] bg-white p-5"><div className="flex items-start justify-between gap-4"><div><p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#58739f]">/ distribuição comercial</p><h3 className="mt-2 font-display text-xl font-semibold text-[#202f4d]">Responsáveis</h3></div><span className="rounded-full bg-[#fff4e8] px-3 py-1.5 text-[10px] font-extrabold text-[#9a6a2c]">{reports.unassigned} sem responsável</span></div>{reports.byConsultant.length === 0 ? <p className="mt-5 text-sm text-[#7a8799]">Nenhum lead atribuído neste período.</p> : <div className="mt-4 divide-y divide-[#edf1f5]">{reports.byConsultant.map((item) => <div key={item.consultantId} className="flex items-center justify-between gap-3 py-3"><div><p className="text-sm font-bold text-[#202f4d]">{item.name}</p><p className="mt-1 text-xs text-[#7a8799]">{item.total} leads · {item.won} ganhos</p></div><span className="rounded-full bg-[#eef8f8] px-3 py-1.5 text-xs font-extrabold text-[#587f82]">{item.conversionRate.toLocaleString('pt-BR')}%</span></div>)}</div>}</section>
+                </div>
+                <section className="overflow-hidden rounded-2xl border border-[#d9e0e9] bg-white"><div className="border-b border-[#d9e0e9] px-5 py-4"><p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#58739f]">/ qualidade de aquisição</p><h3 className="mt-2 font-display text-xl font-semibold text-[#202f4d]">Origem e conversão dos leads</h3></div>{reports.bySource.length === 0 ? <p className="p-5 text-sm text-[#7a8799]">Nenhum lead registrado neste período.</p> : <div className="overflow-x-auto"><table className="w-full min-w-[520px] text-left text-sm"><thead className="bg-[#fbfcfd] text-[10px] uppercase tracking-[.12em] text-[#7a8799]"><tr><th className="px-5 py-3 font-bold">Origem</th><th className="px-5 py-3 font-bold">Leads</th><th className="px-5 py-3 font-bold">Ganhos</th><th className="px-5 py-3 font-bold">Conversão</th></tr></thead><tbody className="divide-y divide-[#edf1f5]">{reports.bySource.map((item) => <tr key={item.source}><td className="px-5 py-3.5 font-bold text-[#202f4d]">{CRM_SOURCE_LABELS[item.source] || item.source}</td><td className="px-5 py-3.5 text-[#56657d]">{item.total}</td><td className="px-5 py-3.5 text-[#56657d]">{item.won}</td><td className="px-5 py-3.5"><span className="rounded-full bg-[#eef8f8] px-3 py-1.5 text-xs font-extrabold text-[#587f82]">{item.conversionRate.toLocaleString('pt-BR')}%</span></td></tr>)}</tbody></table></div>}</section>
+              </div>}
+            </section>
+          </div>}
+          {manualLeadOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#061a36]/70 px-5 py-8" role="dialog" aria-modal="true" aria-labelledby="new-lead-title">
            <form onSubmit={createManualLead} className="max-h-[calc(100dvh-4rem)] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl sm:p-8">
              <div className="flex items-start justify-between gap-4"><div><p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#58739f]">/ cadastro manual</p><h2 id="new-lead-title" className="mt-2 font-display text-3xl font-semibold tracking-[-.04em] text-[#202f4d]">Novo lead.</h2><p className="mt-2 text-sm text-[#56657d]">Registre uma oportunidade que chegou por outro canal.</p></div><button type="button" onClick={() => setManualLeadOpen(false)} aria-label="Fechar cadastro" className="rounded-full border border-[#d9e0e9] p-2 text-[#56657d] hover:border-[#202f4d]"><X className="h-4 w-4" /></button></div>
               <div className="mt-7 grid gap-4 sm:grid-cols-2">
@@ -1296,7 +1373,7 @@ function AdminPage() {
                <label className="text-xs font-bold text-[#202f4d]">E-mail<input required type="email" value={manualLead.email} onChange={(event) => setManualLead({ ...manualLead, email: event.target.value })} className="mt-1.5 w-full rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3 py-2.5 text-sm font-normal outline-none focus:border-[#58739f]" /></label>
                <label className="text-xs font-bold text-[#202f4d]">Empresa<input value={manualLead.company} onChange={(event) => setManualLead({ ...manualLead, company: event.target.value })} className="mt-1.5 w-full rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3 py-2.5 text-sm font-normal outline-none focus:border-[#58739f]" /></label>
                <label className="text-xs font-bold text-[#202f4d] sm:col-span-2">Serviço de interesse<select value={manualLead.service} onChange={(event) => setManualLead({ ...manualLead, service: event.target.value })} className="mt-1.5 w-full rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3 py-2.5 text-sm font-normal outline-none focus:border-[#58739f]"><option value="">Não informado</option>{SERVICES.map((service) => <option key={service.slug} value={service.slug}>{service.label}</option>)}</select></label>
-                <label className="text-xs font-bold text-[#202f4d] sm:col-span-2">Origem do lead<select value={manualLead.source} onChange={(event) => setManualLead({ ...manualLead, source: event.target.value as CrmSource })} className="mt-1.5 w-full rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3 py-2.5 text-sm font-normal outline-none focus:border-[#58739f]">{CRM_SOURCE_OPTIONS.map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
+                 <label className="text-xs font-bold text-[#202f4d] sm:col-span-2">Origem do lead<select value={manualLead.source} onChange={(event) => setManualLead({ ...manualLead, source: event.target.value as CrmSource })} className="mt-1.5 w-full rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3 py-2.5 text-sm font-normal outline-none focus:border-[#58739f]">{MANUAL_LEAD_SOURCE_OPTIONS.map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
                <label className="text-xs font-bold text-[#202f4d] sm:col-span-2">Contexto inicial<textarea value={manualLead.message} onChange={(event) => setManualLead({ ...manualLead, message: event.target.value })} rows={3} className="mt-1.5 w-full resize-none rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3 py-2.5 text-sm font-normal outline-none focus:border-[#58739f]" /></label>
              </div>
              <div className="mt-7 flex justify-end gap-3"><button type="button" onClick={() => setManualLeadOpen(false)} className="rounded-lg border border-[#c3d1df] px-4 py-3 text-xs font-extrabold text-[#202f4d]">Cancelar</button><button type="submit" disabled={savingLead} className="rounded-lg bg-[#202f4d] px-5 py-3 text-xs font-extrabold text-white hover:bg-[#58739f] disabled:opacity-60">{savingLead ? 'Salvando...' : 'Cadastrar lead'}</button></div>

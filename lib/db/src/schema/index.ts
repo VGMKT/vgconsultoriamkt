@@ -3,8 +3,10 @@ import { createInsertSchema } from "drizzle-zod";
 
 export const leadStatuses = ['new', 'contacted', 'meeting', 'proposal', 'won', 'lost'] as const;
 export type LeadStatus = (typeof leadStatuses)[number];
-export const leadSources = ['google', 'meta_ads', 'organic', 'site', 'manual', 'referral', 'other'] as const;
+export const leadSources = ['google', 'meta_ads', 'organic', 'site', 'manual', 'referral', 'active_offer', 'other'] as const;
 export type LeadSource = (typeof leadSources)[number];
+export const manualLeadSources = ['manual', 'referral', 'active_offer', 'other'] as const;
+export type ManualLeadSource = (typeof manualLeadSources)[number];
 export const crmRoles = ['owner', 'admin', 'manager', 'operator'] as const;
 export type CrmRole = (typeof crmRoles)[number];
 
