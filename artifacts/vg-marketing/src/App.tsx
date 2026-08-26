@@ -643,6 +643,65 @@ const CRM_SOURCE_LABELS: Record<string, string> = {
 const CRM_SOURCE_OPTIONS = Object.entries(CRM_SOURCE_LABELS);
 type CrmSource = keyof typeof CRM_SOURCE_LABELS;
 
+type LeadAttribution = {
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_term?: string;
+  utm_content?: string;
+  gclid?: string;
+  fbclid?: string;
+  referrer?: string;
+  landing_page?: string;
+};
+
+const LEAD_ATTRIBUTION_STORAGE_KEY = 'vg_lead_attribution_v1';
+const LEAD_ATTRIBUTION_KEYS: Array<keyof LeadAttribution> = [
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'utm_term',
+  'utm_content',
+  'gclid',
+  'fbclid',
+];
+
+declare global {
+  interface Window {
+    dataLayer?: Array<Record<string, unknown>>;
+  }
+}
+
+function captureFirstTouchAttribution(): LeadAttribution | null {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const stored = window.sessionStorage.getItem(LEAD_ATTRIBUTION_STORAGE_KEY);
+    if (stored) return JSON.parse(stored) as LeadAttribution;
+
+    const params = new URLSearchParams(window.location.search);
+    const attribution = LEAD_ATTRIBUTION_KEYS.reduce<LeadAttribution>((result, key) => {
+      const value = params.get(key);
+      if (value) result[key] = value.slice(0, 500);
+      return result;
+    }, {});
+
+    if (!Object.keys(attribution).length) return null;
+    attribution.referrer = document.referrer.slice(0, 1000);
+    attribution.landing_page = `${window.location.pathname}${window.location.search}`.slice(0, 2000);
+    window.sessionStorage.setItem(LEAD_ATTRIBUTION_STORAGE_KEY, JSON.stringify(attribution));
+    return attribution;
+  } catch {
+    return null;
+  }
+}
+
+function pushGtmEvent(event: Record<string, unknown>) {
+  if (typeof window === 'undefined') return;
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push(event);
+}
+
 function detectLeadSource(): CrmSource {
   if (typeof window === 'undefined') return 'site';
   const params = new URLSearchParams(window.location.search);
@@ -678,14 +737,21 @@ function ContactForm({ compact = false, serviceValue = '' }: { compact?: boolean
     setError('');
     setSending(true);
     try {
+      const attribution = captureFirstTouchAttribution();
       const response = await fetch(`${API_BASE}/api/leads`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, ...(attribution || {}) }),
       });
       if (!response.ok) throw new Error('lead-submit-failed');
       setSubmitted(true);
+      pushGtmEvent({
+        event: 'generate_lead',
+        form_name: compact ? 'compact_contact' : 'contact',
+        service: form.service || undefined,
+        ...attribution,
+      });
     } catch {
       setError('Não foi possível enviar agora. Verifique sua conexão e tente novamente.');
     } finally {
@@ -751,6 +817,15 @@ type CrmLead = {
   service: string | null;
   message: string | null;
   source: string;
+  utmSource: string | null;
+  utmMedium: string | null;
+  utmCampaign: string | null;
+  utmTerm: string | null;
+  utmContent: string | null;
+  gclid: string | null;
+  fbclid: string | null;
+  referrer: string | null;
+  landingPage: string | null;
   status: string;
   assignedUserId: number | null;
   createdAt: string;
@@ -770,6 +845,31 @@ const CRM_STATUS_LABELS: Record<string, string> = {
   won: 'Ganho',
   lost: 'Perdido',
 };
+
+function LeadAttributionSummary({ lead }: { lead: CrmLead | null }) {
+  if (!lead || !(lead.utmSource || lead.utmMedium || lead.utmCampaign || lead.utmTerm || lead.utmContent || lead.gclid || lead.fbclid || lead.referrer || lead.landingPage)) return null;
+  return (
+    <section className="mb-6 rounded-2xl border border-[#d9e0e9] bg-white p-5 shadow-[0_12px_30px_rgba(32,47,77,.05)]">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#58739f]">/ atribuição da campanha</p>
+          <h2 className="mt-2 font-display text-xl font-semibold">De onde veio este lead</h2>
+        </div>
+        {lead.gclid && <span className="rounded-full bg-[#eef8f8] px-3 py-1.5 text-[10px] font-extrabold text-[#587f82]">Google Ads identificado</span>}
+        {!lead.gclid && lead.fbclid && <span className="rounded-full bg-[#eef8f8] px-3 py-1.5 text-[10px] font-extrabold text-[#587f82]">Meta Ads identificado</span>}
+      </div>
+      <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+        {lead.utmSource && <div><p className="text-xs text-[#7a8799]">Origem</p><p className="mt-1 font-bold">{lead.utmSource}</p></div>}
+        {lead.utmMedium && <div><p className="text-xs text-[#7a8799]">Mídia</p><p className="mt-1 font-bold">{lead.utmMedium}</p></div>}
+        {lead.utmCampaign && <div><p className="text-xs text-[#7a8799]">Campanha</p><p className="mt-1 break-words font-bold">{lead.utmCampaign}</p></div>}
+        {lead.utmContent && <div><p className="text-xs text-[#7a8799]">Conteúdo</p><p className="mt-1 break-words font-bold">{lead.utmContent}</p></div>}
+        {lead.utmTerm && <div><p className="text-xs text-[#7a8799]">Termo</p><p className="mt-1 break-words font-bold">{lead.utmTerm}</p></div>}
+        {lead.landingPage && <div className="sm:col-span-2"><p className="text-xs text-[#7a8799]">Página de entrada</p><p className="mt-1 break-all font-mono-vg text-xs">{lead.landingPage}</p></div>}
+        {lead.referrer && <div className="sm:col-span-2"><p className="text-xs text-[#7a8799]">Referência</p><p className="mt-1 break-all text-xs">{lead.referrer}</p></div>}
+      </div>
+    </section>
+  );
+}
 
 function SignInPage() {
   const [, setLocation] = useLocation();
@@ -1198,6 +1298,7 @@ function AdminPage() {
            <div className="mt-6 divide-y divide-[#edf1f5]">{team.map((member) => { const selectedRole = pendingRoles[member.id] || member.role; const roleChanged = selectedRole !== member.role; return <div key={member.id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-center gap-3"><span className={`flex h-9 w-9 items-center justify-center rounded-full ${member.active ? 'bg-[#eef8f8] text-[#587f82]' : 'bg-[#f5f7fa] text-[#9caac0]'}`}><Shield className="h-4 w-4" /></span><div><p className="text-sm font-bold">{member.name}</p><p className="text-xs text-[#7a8799]">{member.email} · {CRM_ROLE_LABELS[member.role] || member.role} · {member.active ? 'Ativo' : 'Desativado'}</p></div></div><div className="flex flex-wrap justify-end gap-2"><select disabled={member.id === crmUser?.id || !manageableRoles.includes(member.role)} value={selectedRole} onChange={(event) => setPendingRoles({ ...pendingRoles, [member.id]: event.target.value as CrmRole })} className="rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3 py-2 text-xs font-bold">{manageableRoles.includes(member.role) ? manageableRoles.map((key) => <option key={key} value={key}>{CRM_ROLE_LABELS[key]}</option>) : <option value={member.role}>{CRM_ROLE_LABELS[member.role] || member.role}</option>}</select>{roleChanged && <button type="button" onClick={() => void updateTeamUser(member, { role: selectedRole })} className="rounded-lg bg-[#202f4d] px-3 py-2 text-xs font-extrabold text-white">Salvar</button>}<button type="button" disabled={member.id === crmUser?.id || !manageableRoles.includes(member.role)} onClick={() => void updateTeamUser(member, { active: !Boolean(member.active) })} className="rounded-lg border border-[#c3d1df] px-3 py-2 text-xs font-bold">{member.active ? 'Desativar' : 'Ativar'}</button><button type="button" disabled={member.id === crmUser?.id || !manageableRoles.includes(member.role)} onClick={() => void deleteTeamUser(member)} className="rounded-lg border border-[#e4b1aa] px-3 py-2 text-xs font-bold text-[#9d4b43]">Excluir</button></div></div>})}</div>
          </div>}
          {selected && ['owner', 'admin', 'manager'].includes(crmUser?.role || '') && <section className="mb-6 rounded-2xl border border-[#d9e0e9] bg-white p-5 shadow-[0_12px_30px_rgba(32,47,77,.05)]"><div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#58739f]">/ responsabilidade comercial</p><h2 className="mt-2 font-display text-xl font-semibold">Consultor responsável</h2><p className="mt-1 text-xs text-[#56657d]">Defina quem acompanha este lead. A alteração só será aplicada ao clicar em Salvar.</p></div><div className="flex w-full gap-2 sm:w-auto"><select value={pendingAssignment === undefined ? (selected.assignedUserId ?? '') : (pendingAssignment ?? '')} onChange={(event) => setPendingAssignment(event.target.value ? Number(event.target.value) : null)} className="min-w-0 flex-1 rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3 py-2.5 text-sm outline-none sm:w-64"><option value="">Sem consultor atribuído</option>{team.filter((member) => member.role === 'operator' && Boolean(member.active)).map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}</select>{(pendingAssignment !== undefined && pendingAssignment !== selected.assignedUserId) && <button type="button" onClick={() => void updateAssignment(pendingAssignment)} className="rounded-lg bg-[#202f4d] px-4 py-2.5 text-xs font-extrabold text-white">Salvar</button>}</div></div></section>}
+          <LeadAttributionSummary lead={selected} />
          <div className="grid gap-6 lg:grid-cols-[1fr_390px]">
            <section className="overflow-hidden rounded-3xl border border-white/80 bg-white/90 shadow-[0_16px_35px_rgba(32,47,77,.08)]">
             <div className="flex items-center justify-between border-b border-[#d9e0e9] px-5 py-4"><div><p className="font-display text-lg font-semibold tracking-[-.02em]">Leads recentes</p><p className="mt-1 text-xs text-[#7a8799]">Selecione uma oportunidade para ver o contexto.</p></div><span className="hidden rounded-full bg-[#eef8f8] px-3 py-1.5 font-mono-vg text-[9px] uppercase tracking-[.12em] text-[#587f82] sm:block">{leads.length} encontrados</span></div>
@@ -2174,6 +2275,10 @@ export function PublicPage({ path }: { path: string }) {
 }
 
  function App() {
+  useEffect(() => {
+    captureFirstTouchAttribution();
+  }, []);
+
   if (!clerkPubKey) {
     return (
       <main className="flex min-h-[100dvh] items-center justify-center bg-[#071c2a] px-5 text-center text-white">

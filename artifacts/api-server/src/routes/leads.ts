@@ -16,6 +16,15 @@ const publicLeadSchema = z.object({
   service: z.string().trim().max(100).optional().nullable(),
   message: z.string().trim().max(5000).optional().nullable(),
   source: z.string().trim().max(80).optional().nullable(),
+  utm_source: z.string().trim().max(255).optional().nullable(),
+  utm_medium: z.string().trim().max(255).optional().nullable(),
+  utm_campaign: z.string().trim().max(255).optional().nullable(),
+  utm_term: z.string().trim().max(255).optional().nullable(),
+  utm_content: z.string().trim().max(255).optional().nullable(),
+  gclid: z.string().trim().max(500).optional().nullable(),
+  fbclid: z.string().trim().max(500).optional().nullable(),
+  referrer: z.string().trim().max(1000).optional().nullable(),
+  landing_page: z.string().trim().max(2000).optional().nullable(),
 }).strict();
 
 const leadFiltersSchema = z.object({
@@ -64,6 +73,20 @@ const parseSource = (value: unknown, fallback: LeadSource): LeadSource => {
   return typeof value === 'string' && leadSources.includes(value as LeadSource) ? value as LeadSource : fallback;
 };
 
+function parseAttribution(data: z.infer<typeof publicLeadSchema>) {
+  return {
+    utmSource: data.utm_source || null,
+    utmMedium: data.utm_medium || null,
+    utmCampaign: data.utm_campaign || null,
+    utmTerm: data.utm_term || null,
+    utmContent: data.utm_content || null,
+    gclid: data.gclid || null,
+    fbclid: data.fbclid || null,
+    referrer: data.referrer || null,
+    landingPage: data.landing_page || null,
+  };
+}
+
 const statusLabels: Record<LeadStatus, string> = {
   new: 'Novo',
   contacted: 'Contato iniciado',
@@ -86,7 +109,8 @@ router.post('/leads', async (req, res, next) => {
     }
     const [lead] = await db.insert(leadsTable).values({
       ...parsed.data,
-       source: parseSource(parsed.data.source, 'site'),
+      source: parseSource(parsed.data.source, 'site'),
+      ...parseAttribution(parsed.data),
       status: 'new',
     }).returning();
     await db.insert(leadActivitiesTable).values({ leadId: lead.id, type: 'created', detail: 'Lead recebido pelo site' });
@@ -108,7 +132,8 @@ router.post('/leads/manual', requireRole('owner', 'admin', 'manager', 'operator'
     }
     const [lead] = await db.insert(leadsTable).values({
       ...parsed.data,
-       source: parseSource(parsed.data.source, 'manual'),
+      source: parseSource(parsed.data.source, 'manual'),
+      ...parseAttribution(parsed.data),
       status: 'new',
     }).returning();
     await db.insert(leadActivitiesTable).values({ leadId: lead.id, actorId: req.userId, type: 'created', detail: 'Lead cadastrado manualmente' });
