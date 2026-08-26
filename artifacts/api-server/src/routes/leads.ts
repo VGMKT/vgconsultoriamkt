@@ -36,10 +36,12 @@ const leadFiltersSchema = z.object({
 }).strict();
 
 const updateLeadSchema = z.object({
-  status: z.enum(leadStatuses),
-  source: z.enum(leadSources),
+  status: z.enum(leadStatuses).optional(),
   assignedUserId: z.coerce.number().int().positive().nullable().optional(),
-}).strict();
+}).strict().refine(
+  (data) => data.status !== undefined || data.assignedUserId !== undefined,
+  { message: 'Informe o status ou o responsável para atualizar o lead.' },
+);
 
 const noteSchema = z.object({
   body: z.string().trim().min(1, 'Escreva uma observação antes de salvar.').max(5000, 'A observação deve ter no máximo 5.000 caracteres.'),
@@ -223,7 +225,7 @@ router.patch('/leads/:id', requireRole('owner', 'admin', 'manager', 'operator'),
       res.status(400).json({ error: 'Dados de atualização inválidos.', details: parsed.error.flatten() });
       return;
     }
-    const { status, source, assignedUserId } = parsed.data;
+    const { status, assignedUserId } = parsed.data;
     if (assignedUserId !== undefined && !['owner', 'admin', 'manager'].includes(req.crmUser?.role || '')) {
       res.status(403).json({ error: 'Somente gestor ou superior pode alterar o consultor responsável.' });
       return;
@@ -241,16 +243,20 @@ router.patch('/leads/:id', requireRole('owner', 'admin', 'manager', 'operator'),
       }
     }
     const id = parsedId.data;
-    const updateValues = assignedUserId === undefined
-      ? { status, source, updatedAt: new Date() }
-      : { status, source, assignedUserId, updatedAt: new Date() };
+    const updateValues = {
+      ...(status === undefined ? {} : { status }),
+      ...(assignedUserId === undefined ? {} : { assignedUserId }),
+      updatedAt: new Date(),
+    };
     const [lead] = await db.update(leadsTable).set(updateValues).where(eq(leadsTable.id, id)).returning();
     if (!lead) {
       res.status(404).json({ error: 'Lead não encontrado.' });
       return;
     }
-    await db.insert(leadActivitiesTable).values({ leadId: id, actorId: req.userId, type: 'status_changed', detail: `Status alterado para ${statusLabels[status]}` });
-    logger.info({ event: 'lead.updated', leadId: id, status, source, actorId: req.userId }, 'Lead status or source updated');
+    if (status !== undefined) {
+      await db.insert(leadActivitiesTable).values({ leadId: id, actorId: req.userId, type: 'status_changed', detail: `Status alterado para ${statusLabels[status]}` });
+    }
+    logger.info({ event: 'lead.updated', leadId: id, status, assignedUserId, actorId: req.userId }, 'Lead status or assignment updated');
     res.json({ lead });
   } catch (error) {
     next(error);
