@@ -1,5 +1,5 @@
 [build]
-  command = "node -e \"const key = process.env.VITE_CLERK_PUBLISHABLE_KEY; console.log('[Clerk] VITE_CLERK_PUBLISHABLE_KEY configured:', Boolean(key), 'valid format:', Boolean(key && /^pk_(test|live)_/.test(key))); if (!key || !/^pk_(test|live)_/.test(key)) process.exit(1)\" && PUBLIC_CLERK_PUBLISHABLE_KEY=\"$VITE_CLERK_PUBLISHABLE_KEY\" pnpm --filter @workspace/vg-marketing run build"
+  command = "node -e \"const key = process.env.VITE_CLERK_PUBLISHABLE_KEY; console.log('[Clerk] VITE_CLERK_PUBLISHABLE_KEY configured:', Boolean(key), 'valid format:', Boolean(key && /^pk_(test|live)_/.test(key))); if (!key || !/^pk_(test|live)_/.test(key)) process.exit(1)\" && PUBLIC_CLERK_PUBLISHABLE_KEY=\"$VITE_CLERK_PUBLISHABLE_KEY\" pnpm --filter @workspace/vg-marketing run build && pnpm --filter @workspace/vg-marketing run audit:performance"
   publish = "artifacts/vg-marketing/dist/public"
 
 [build.environment]

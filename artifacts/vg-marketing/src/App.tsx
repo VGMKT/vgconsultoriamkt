@@ -534,7 +534,7 @@ function Header({ onLight = false }: { onLight?: boolean }) {
     <header className="absolute left-0 right-0 top-0 z-40">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 lg:px-10 lg:py-7">
         <Link href="/" className="group flex items-center gap-3" data-testid="link-brand">
-          <img src={assetUrl(logoPath)} alt="VG Consultoria em Marketing" width="44" height="44" fetchPriority="high" decoding="async" className="h-11 w-11 rounded-xl object-cover shadow-[0_6px_16px_rgba(0,0,0,.15)] transition-transform duration-300 group-hover:rotate-3 group-hover:scale-105" />
+          <img src={assetUrl(logoPath)} alt="VG Consultoria em Marketing" width="44" height="44" decoding="async" className="h-11 w-11 rounded-xl object-cover shadow-[0_6px_16px_rgba(0,0,0,.15)] transition-transform duration-300 group-hover:rotate-3 group-hover:scale-105" />
           <span className={`hidden max-w-[190px] text-[10px] font-extrabold uppercase leading-[1.15] tracking-[.16em] sm:block ${onLight ? 'text-[#202f4d]' : 'text-white'}`}>VG CONSULTORIA<br />EM MARKETING</span>
         </Link>
         <nav className="hidden items-center gap-8 md:flex" aria-label="Navegação principal">
@@ -2623,18 +2623,34 @@ function Router() {
   );
 }
 
+// Public pages are rendered by Astro islands and do not need to import the
+// authenticated CRM tree. Keeping this route table separate lets Vite remove
+// Clerk, React Query, and the admin UI from the initial public chunk.
+function PublicRouter() {
+  return (
+    <ErrorBoundary>
+      <Switch>
+        <Route path="/" component={Home} />
+        <Route path="/sobre-a-vg" component={AboutPage} />
+        <Route path="/cases" component={CasesPage} />
+        {SERVICES.map((service) => <Route key={service.slug} path={`/servicos/${service.slug}`}>{service.slug === 'trafego-pago' ? <PaidTrafficPage service={service} /> : service.slug === 'consultoria-de-marketing' ? <MarketingConsultingPage service={service} /> : service.slug === 'internalizacao-de-marketing' ? <InternalizationPage service={service} /> : service.slug === 'manager-as-a-service' ? <ManagerAsServicePage service={service} /> : service.slug === 'branding' ? <BrandingPage service={service} /> : service.slug === 'sites-landing-pages' ? <SitesLandingPagesPage service={service} /> : service.slug === 'conteudo-para-redes-sociais' ? <SocialContentPage service={service} /> : <ServicePage service={service} />}</Route>)}
+        <Route component={NotFound} />
+      </Switch>
+    </ErrorBoundary>
+  );
+}
+
 export function PublicPage({ path }: { path: string }) {
   return (
     <WouterRouter base={basePath} ssrPath={path}>
-      <ErrorBoundary>
-        <Router />
-      </ErrorBoundary>
+      <PublicRouter />
     </WouterRouter>
   );
 }
 
  function App() {
   useEffect(() => {
+    void import('@clerk/themes/shadcn.css');
     captureFirstTouchAttribution();
   }, []);
 

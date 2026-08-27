@@ -8,7 +8,7 @@ export default defineConfig({
   site: 'https://vgconsultoriamkt.com.br',
   integrations: [react()],
   vite: {
-    plugins: [tailwindcss({ optimize: false })],
+    plugins: [tailwindcss({ optimize: true })],
     build: {
       target: 'es2022',
     },

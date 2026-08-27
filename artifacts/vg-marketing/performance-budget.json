@@ -1,0 +1,42 @@
+{
+  "budgets": {
+    "publicEntrypointBytes": 640000,
+    "blockingCssBytes": 145000,
+    "blockingCssRequests": 1,
+    "documentBytes": 65000,
+    "documentLoadMs": 1000,
+    "criticalResourceLoadMs": 1000
+  },
+  "pages": [
+    {
+      "name": "Home",
+      "path": "/"
+    },
+    {
+      "name": "Cases",
+      "path": "/cases/"
+    },
+    {
+      "name": "Serviço: Tráfego pago",
+      "path": "/servicos/trafego-pago/"
+    }
+  ],
+  "profiles": [
+    {
+      "name": "desktop",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36"
+    },
+    {
+      "name": "mobile",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "userAgent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 Chrome/131.0.0.0 Mobile Safari/537.36"
+    }
+  ]
+}

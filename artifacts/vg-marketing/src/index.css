@@ -1,6 +1,5 @@
 @layer theme, base, clerk, components, utilities;
 @import 'tailwindcss';
-@import '@clerk/themes/shadcn.css';
 @import 'tw-animate-css';
 @plugin "@tailwindcss/typography";
 
@@ -120,6 +119,8 @@
     background-image: linear-gradient(hsl(210 40% 98% / .075) 1px, transparent 1px), linear-gradient(90deg, hsl(210 40% 98% / .075) 1px, transparent 1px);
     background-size: 42px 42px;
   }
+  /* Decorative metadata stays readable on the pale narrative sections. */
+  .text-\[\#9caac0\] { color: #62728a !important; }
 }
 
 .site-shell::before {
@@ -130,6 +131,20 @@
   opacity: .035;
   z-index: 50;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+}
+
+/* Keep below-the-fold sections in the document for SEO and anchors, but defer
+   their layout/paint until they approach the viewport. */
+.site-shell > section:not(:first-of-type),
+.site-shell > footer {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 700px;
+}
+
+@media (max-width: 640px) {
+  /* The grain is decorative and its fixed filter is disproportionately
+     expensive on mobile GPUs. */
+  .site-shell::before { display: none; }
 }
 
 /* Branding is the visual reference for the institutional pages:

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "ASTRO_DEV_BACKGROUND=0 astro dev --host 0.0.0.0 --port $PORT",
     "build": "astro build",
+    "audit:performance": "node scripts/performance-audit.mjs",
     "serve": "astro preview --host 0.0.0.0 --port $PORT",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
