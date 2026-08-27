@@ -1,5 +1,5 @@
 import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
-import { ArrowDownRight, ArrowRight, BarChart3, Check, ChevronDown, CircleCheck, Compass, Crosshair, Instagram, Linkedin, Menu, MoveUpRight, Play, Plus, Quote, Shield, Sparkles, Target, Trash2, UserCog, X, Zap } from 'lucide-react';
+import { ArrowDownRight, ArrowLeft, ArrowRight, BarChart3, Check, ChevronDown, CircleCheck, Compass, Crosshair, Instagram, Linkedin, Menu, MoveUpRight, Play, Plus, Quote, Search, Shield, Sparkles, Target, Trash2, UserCog, X, Zap } from 'lucide-react';
 import { Link, Redirect, Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ClerkProvider, useAuth, useClerk, useUser } from '@clerk/react';
@@ -214,7 +214,7 @@ const SERVICES: Service[] = [
     eyebrow: 'Marca & presença',
     title: 'Uma marca que\nocupa seu lugar.',
     short: 'Posicionamento que ganha forma, voz e consistência.',
-    description: 'Branding é uma escolha de negócio antes de ser uma escolha estética. Encontramos o território onde sua empresa pode ser reconhecida, lembrada e preferida — e traduzimos isso para a experiência.',
+    description: 'Branding é uma escolha de negócio antes de ser uma escolha estética. Encontramos o território onde sua empresa pode ser reconhecida, lembrada e preferida, e traduzimos isso para a experiência.',
     number: '05',
     accent: 'Presença',
     bullets: ['Posicionamento de marca', 'Identidade visual e verbal', 'Diretrizes de marca nos canais', 'Estratégia de presença digital'],
@@ -228,6 +228,27 @@ const SERVICES: Service[] = [
     idealFor: 'Empresas que precisam se diferenciar, estão crescendo ou sentem que a marca atual já não representa a qualidade e a ambição do negócio.',
     metric: 'Uma marca',
     metricLabel: 'para ser reconhecida, lembrada e escolhida',
+  },
+  {
+    slug: 'sites-landing-pages',
+    label: 'Sites e Landing Pages',
+    eyebrow: 'Presença digital',
+    title: 'Seu site precisa ser\nencontrado primeiro.',
+    short: 'Uma presença digital que organiza a história, facilita a descoberta e conduz à próxima conversa.',
+    description: 'Criamos sites e landing pages que conectam marca, busca, conteúdo, mídia e vendas. Cada projeto parte do papel que a presença digital precisa cumprir dentro da operação do negócio.',
+    number: '06',
+    accent: 'Encontrabilidade',
+    bullets: ['SEO técnico e busca local', 'Arquitetura, conteúdo e clareza de proposta', 'Landing pages e caminhos de conversão', 'Mensuração e integração com mídia e CRM'],
+    bulletDetails: [
+      'Organizamos os fundamentos técnicos, a estrutura de páginas e os sinais locais para sua empresa aparecer em buscas relacionadas aos seus serviços e à sua região.',
+      'Definimos mensagens, navegação e páginas prioritárias para que quem chega entenda rapidamente o que você faz, para quem e por que escolher você.',
+      'Construímos páginas com uma próxima ação clara, como conversar no WhatsApp, solicitar um orçamento ou iniciar um atendimento, sem criar fricção desnecessária.',
+      'Planejamos eventos, formulários, fontes de conversão e integrações possíveis para conectar presença digital, investimento em mídia e operação comercial.',
+    ],
+    deliverables: ['Estratégia de presença digital alinhada ao negócio', 'Site institucional ou landing page criada para o objetivo certo', 'Estrutura preparada para busca, conteúdo e mídia', 'Jornadas de conversão claras e responsivas', 'Mensuração de visitas, ações e oportunidades', 'Integração possível com CRM e ferramentas da operação'],
+    idealFor: 'Empresas que precisam criar uma presença digital própria para ser encontradas, apresentar bem sua oferta, reforçar credibilidade e transformar interesse em conversas comerciais.',
+    metric: 'Do encontro',
+    metricLabel: 'na busca à próxima conversa, com clareza, intenção e acompanhamento',
   },
   {
     slug: 'conteudo-para-redes-sociais',
@@ -254,6 +275,22 @@ const SERVICES: Service[] = [
 ];
 
 const serviceBySlug = (slug: string) => SERVICES.find((service) => service.slug === slug) ?? SERVICES[0];
+
+const HOME_NEEDS = [
+  { index: '01', kicker: 'Aquisição & escala', title: 'Quero vender mais pela internet', text: 'Organizamos aquisição, mídia e conversão para transformar atenção em oportunidades mais qualificadas.', detail: 'Do clique ao fechamento da venda, com estratégia, time preparado e processo claro.', tone: 'bg-[#c88982]', textTone: 'text-[#202f4d]' },
+  { index: '02', kicker: 'Time & autonomia', title: 'Quero estruturar minha própria equipe de marketing', text: 'Montamos a base para sua empresa ter pessoas, processos e rotina próprios de marketing.', detail: 'Um time próprio, com as pessoas certas nos lugares certos.', tone: 'bg-[#d7bd91]', textTone: 'text-[#202f4d]' },
+  { index: '03', kicker: 'Capacitação', title: 'Quero treinar e capacitar meu time atual', text: 'Damos direção prática para o time executar com mais critério, autonomia e consistência.', detail: 'Contexto antes de canal. Critério antes de velocidade.', tone: 'bg-[#9fd6d7]', textTone: 'text-[#202f4d]' },
+  { index: '04', kicker: 'Liderança sob demanda', title: 'Quero um marketing gerenciado pela VG', text: 'Assumimos a liderança estratégica e a cadência do marketing como uma extensão do seu negócio.', detail: 'Uma liderança para conectar estratégia, equipe, parceiros e resultado.', tone: 'bg-[#202f4d]', textTone: 'text-white' },
+  { index: '05', kicker: 'Marca & presença', title: 'Quero fortalecer minha marca e presença', text: 'Ajustamos a forma como sua marca é percebida e traduzimos essa direção em presença contínua.', detail: 'Uma marca para ser reconhecida, lembrada e escolhida.', tone: 'bg-[#f8fafc]', textTone: 'text-[#202f4d]' },
+  { index: '06', kicker: 'Presença digital', title: 'Quero criar meu site ou landing page', text: 'Criamos uma presença que facilita a descoberta, explica sua oferta e conduz as pessoas até a próxima conversa.', detail: 'Encontrabilidade, clareza, conversão e aprendizado em um ponto de encontro próprio.', tone: 'bg-[#dce7f0]', textTone: 'text-[#202f4d]' },
+] as const;
+
+const HOME_TESTIMONIALS = [
+  ['SN', 'Samyr Nobre', 'Sócio-proprietário, Profix Portas Automáticas', 'A VG criou o nome da minha empresa, ajustou as campanhas, o processo comercial e posso dizer que fez toda diferença para que hoje pudéssemos colher os resultados.'],
+  ['MF', 'Marcelo Fedatto', 'Diretor HF&Co.', 'A VG, com auxílio do Victor, nos ajudou durante uma tomada de decisão em que tínhamos que escolher entre uma agência para tocar nosso marketing. Escolhemos a consultoria e nela lançamos uma marca nova no mercado, desenvolvemos novas estratégias e evoluímos muito.'],
+  ['BB', 'Bianca Berto', 'Founder Imóveis Diferenciados', 'O VG já atua há mais de 2 anos no marketing da Imóveis Diferenciados, não fazendo somente o tráfego, mas auxiliando no marketing em geral, conteúdo, sistemas. As campanhas que rodamos são sempre acompanhadas e medidas, estou muito satisfeita.'],
+  ['EF', 'Edson Filho', 'Sócio-diretor Panificadora Santa Rita', 'A VG nos dá suporte no marketing da padaria há mais de 2 anos. A empresa ajuda até nas contratações do marketing quando necessário. Na gestão de tráfego da padaria, tivemos um aumento grande de seguidores e um aumento interessante no faturamento do delivery.'],
+] as const;
 
 type CaseStudy = {
   client: string;
@@ -363,6 +400,12 @@ const SERVICE_FAQS: Record<string, FAQ[]> = {
     { question: 'Preciso ter uma equipe ou estrutura de gravação?', answer: 'Não necessariamente. A VG pode orientar gravações com a equipe da empresa ou conduzir a produção com parceiros, de acordo com o objetivo e os recursos disponíveis.' },
     { question: 'Como saber se o conteúdo está funcionando?', answer: 'Avaliamos indicadores coerentes com cada objetivo, como alcance, retenção, interação, geração de demanda e contribuição para a jornada de compra.' },
   ],
+  'sites-landing-pages': [
+    { question: 'Qual é a diferença entre um site institucional e uma landing page?', answer: 'O site institucional organiza a presença completa da empresa, com páginas como serviços, sobre, cases e contato. A landing page é uma página mais objetiva, criada para uma oferta, campanha ou ação específica.' },
+    { question: 'Quanto custa criar um site?', answer: 'O investimento depende do tipo de presença, do número de páginas, do conteúdo, das integrações e do nível de estratégia necessário. Primeiro entendemos o objetivo para propor uma estrutura que faça sentido para o negócio.' },
+    { question: 'Quanto tempo leva para criar um site?', answer: 'O prazo varia conforme o escopo, a quantidade de conteúdo e a velocidade das aprovações. Uma landing page costuma ter uma jornada mais enxuta; um site institucional exige mais etapas de arquitetura, conteúdo e publicação.' },
+    { question: 'Um site novo vai aparecer no Google?', answer: 'Criamos a base para a encontrabilidade com estrutura técnica, arquitetura de informação, conteúdo e sinais locais. Nenhum projeto sério promete uma posição específica, porque os resultados dependem também do mercado e da evolução contínua.' },
+  ],
 };
 
 const RELATED_SERVICES: Record<string, string[]> = {
@@ -372,6 +415,7 @@ const RELATED_SERVICES: Record<string, string[]> = {
   'manager-as-a-service': ['internalizacao-de-marketing', 'consultoria-de-marketing'],
   branding: ['conteudo-para-redes-sociais', 'consultoria-de-marketing'],
   'conteudo-para-redes-sociais': ['branding', 'trafego-pago'],
+  'sites-landing-pages': ['branding', 'consultoria-de-marketing'],
 };
 
 function ServiceSeoBlock({ service }: { service: Service }) {
@@ -503,12 +547,12 @@ function Header({ onLight = false }: { onLight?: boolean }) {
         </Link>
         <nav className="hidden items-center gap-8 md:flex" aria-label="Navegação principal">
           {links.map((link) => (
-            <Link key={link.href} href={link.href} data-testid={`link-nav-${link.label.toLowerCase().replaceAll(' ', '-')}`} className={`text-[13px] font-semibold transition-colors hover:text-[#9fe4e5] ${location === link.href ? 'text-[#9fe4e5]' : onLight ? 'text-[#405471]' : 'text-slate-300'}`}>
+            <Link key={link.href} href={link.href} data-testid={`link-nav-${link.label.toLowerCase().replaceAll(' ', '-')}`} className={`text-[13px] font-semibold transition-colors ${onLight ? 'hover:text-[#58739f]' : 'hover:text-[#9fe4e5]'} ${location === link.href ? onLight ? 'text-[#58739f]' : 'text-[#9fe4e5]' : onLight ? 'text-[#202f4d]' : 'text-slate-300'}`}>
               {link.label}
             </Link>
           ))}
           <div className="relative" onMouseEnter={() => setServicesOpen(true)} onMouseLeave={() => setServicesOpen(false)}>
-            <button type="button" aria-expanded={servicesOpen} onClick={() => setServicesOpen(true)} data-testid="button-nav-services" className={`flex items-center gap-1 text-[13px] font-semibold transition-colors hover:text-[#9fe4e5] ${servicesOpen || location.startsWith('/servicos/') ? 'text-[#9fe4e5]' : onLight ? 'text-[#405471]' : 'text-slate-300'}`}>
+            <button type="button" aria-expanded={servicesOpen} onClick={() => setServicesOpen(true)} data-testid="button-nav-services" className={`flex items-center gap-1 text-[13px] font-semibold transition-colors ${onLight ? 'hover:text-[#58739f]' : 'hover:text-[#9fe4e5]'} ${servicesOpen || location.startsWith('/servicos/') ? onLight ? 'text-[#58739f]' : 'text-[#9fe4e5]' : onLight ? 'text-[#202f4d]' : 'text-slate-300'}`}>
               Serviços <ChevronDown className={`h-3.5 w-3.5 transition-transform ${servicesOpen ? 'rotate-180' : ''}`} />
             </button>
             {servicesOpen && (
@@ -523,7 +567,7 @@ function Header({ onLight = false }: { onLight?: boolean }) {
           </div>
         </nav>
          <div className="hidden items-center gap-3 md:flex">
-         <Link href="/sign-in" data-testid="link-header-company-access" className="rounded-full border border-[#9fe4e5]/50 px-4 py-3 text-[12px] font-extrabold text-[#9fe4e5] transition-colors hover:bg-[#9fe4e5] hover:text-[#202f4d]">
+         <Link href="/sign-in" data-testid="link-header-company-access" className={`rounded-full border px-4 py-3 text-[12px] font-extrabold transition-colors ${onLight ? 'border-[#202f4d]/35 text-[#202f4d] hover:bg-[#202f4d] hover:text-white' : 'border-[#9fe4e5]/50 text-[#9fe4e5] hover:bg-[#9fe4e5] hover:text-[#202f4d]'}`}>
            Acesso empresa
          </Link>
          <Link href="/#contato" data-testid="link-header-contact" className="button-lift rounded-full bg-[#9fe4e5] px-5 py-3 text-[12px] font-extrabold text-[#202f4d]">
@@ -537,18 +581,18 @@ function Header({ onLight = false }: { onLight?: boolean }) {
       {open && (
         <div className={`mx-4 rounded-2xl p-4 shadow-2xl backdrop-blur-xl md:hidden ${onLight ? 'border border-[#202f4d]/15 bg-[#f5f7fa]/95' : 'border border-white/15 bg-[#202f4d]/95'}`}>
           {links.slice(0, 2).map((link) => (
-            <Link key={link.href} href={link.href} onClick={() => setOpen(false)} data-testid={`link-mobile-${link.label.toLowerCase().replaceAll(' ', '-')}`} className="block border-b border-white/10 px-3 py-3.5 text-sm font-semibold text-slate-200 last:border-0">
+            <Link key={link.href} href={link.href} onClick={() => setOpen(false)} data-testid={`link-mobile-${link.label.toLowerCase().replaceAll(' ', '-')}`} className={`block border-b px-3 py-3.5 text-sm font-semibold last:border-0 ${onLight ? 'border-[#202f4d]/10 text-[#202f4d]' : 'border-white/10 text-slate-200'}`}>
               {link.label}
             </Link>
           ))}
           <div className="border-b border-white/10">
-            <button type="button" aria-expanded={servicesOpen} onClick={() => setServicesOpen(!servicesOpen)} data-testid="button-mobile-services" className="flex w-full items-center justify-between px-3 py-3.5 text-left text-sm font-semibold text-slate-200">
+            <button type="button" aria-expanded={servicesOpen} onClick={() => setServicesOpen(!servicesOpen)} data-testid="button-mobile-services" className={`flex w-full items-center justify-between px-3 py-3.5 text-left text-sm font-semibold ${onLight ? 'text-[#202f4d]' : 'text-slate-200'}`}>
               Serviços <ChevronDown className={`h-4 w-4 transition-transform ${servicesOpen ? 'rotate-180' : ''}`} />
             </button>
             {servicesOpen && (
               <div className="mb-3 rounded-xl bg-white/5 p-2">
                 {SERVICES.map((service) => (
-                  <Link key={service.slug} href={`/servicos/${service.slug}`} onClick={() => { setOpen(false); setServicesOpen(false); }} data-testid={`link-mobile-service-${service.slug}`} className="block rounded-lg px-3 py-2.5 text-xs font-semibold text-slate-300 hover:bg-[#9fe4e5] hover:text-[#202f4d]">
+                  <Link key={service.slug} href={`/servicos/${service.slug}`} onClick={() => { setOpen(false); setServicesOpen(false); }} data-testid={`link-mobile-service-${service.slug}`} className={`block rounded-lg px-3 py-2.5 text-xs font-semibold hover:bg-[#9fe4e5] hover:text-[#202f4d] ${onLight ? 'text-[#202f4d]' : 'text-slate-300'}`}>
                     {service.label}
                   </Link>
                 ))}
@@ -749,6 +793,7 @@ const LEAD_OBJECTIVE_OPTIONS = [
   ['train_current_team', 'Quero treinar e capacitar meu time atual'],
   ['managed_marketing', 'Quero um marketing gerenciado pela VG'],
   ['strengthen_brand', 'Quero fortalecer minha marca e presença'],
+  ['sites_landing_pages', 'Quero criar meu site ou landing page'],
 ] as const;
 const MARKETING_BUDGET_OPTIONS = [
   ['not_investing', 'Ainda não investe'],
@@ -760,7 +805,7 @@ const MARKETING_BUDGET_OPTIONS = [
 const LEAD_OBJECTIVE_LABELS = Object.fromEntries(LEAD_OBJECTIVE_OPTIONS);
 const MARKETING_BUDGET_LABELS = Object.fromEntries(MARKETING_BUDGET_OPTIONS);
 
-function ContactForm({ compact = false, serviceValue = '' }: { compact?: boolean; serviceValue?: string }) {
+function ContactForm({ compact = false, serviceValue = '', showContext = false, messagePlaceholder }: { compact?: boolean; serviceValue?: string; showContext?: boolean; messagePlaceholder?: string }) {
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
@@ -839,39 +884,39 @@ function ContactForm({ compact = false, serviceValue = '' }: { compact?: boolean
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <label htmlFor="contact-name" className="text-xs font-semibold text-slate-300">Seu nome *
-          <input id="contact-name" name="name" autoComplete="name" required value={form.name} onChange={(event) => update('name', event.target.value)} data-testid="input-name" className="mt-2 w-full rounded-lg border border-white/15 bg-[#1e2d4a] px-3.5 py-3 text-sm text-white placeholder:text-slate-500 focus:border-[#9fe4e5] focus:outline-none" placeholder="Como podemos chamar você?" />
+          <input suppressHydrationWarning id="contact-name" name="name" autoComplete="name" required value={form.name} onChange={(event) => update('name', event.target.value)} data-testid="input-name" className="mt-2 w-full rounded-lg border border-white/15 bg-[#1e2d4a] px-3.5 py-3 text-sm text-white placeholder:text-slate-500 focus:border-[#9fe4e5] focus:outline-none" placeholder="Como podemos chamar você?" />
         </label>
         <label htmlFor="contact-email" className="text-xs font-semibold text-slate-300">Qual seu melhor e-mail? *
-          <input id="contact-email" name="email" autoComplete="email" required type="email" value={form.email} onChange={(event) => update('email', event.target.value)} data-testid="input-email" className="mt-2 w-full rounded-lg border border-white/15 bg-[#1e2d4a] px-3.5 py-3 text-sm text-white placeholder:text-slate-500 focus:border-[#9fe4e5] focus:outline-none" placeholder="voce@empresa.com.br" />
+          <input suppressHydrationWarning id="contact-email" name="email" autoComplete="email" required type="email" value={form.email} onChange={(event) => update('email', event.target.value)} data-testid="input-email" className="mt-2 w-full rounded-lg border border-white/15 bg-[#1e2d4a] px-3.5 py-3 text-sm text-white placeholder:text-slate-500 focus:border-[#9fe4e5] focus:outline-none" placeholder="voce@empresa.com.br" />
         </label>
         <label htmlFor="contact-whatsapp" className="text-xs font-semibold text-slate-300">WhatsApp *
-          <input id="contact-whatsapp" name="whatsapp" autoComplete="tel" inputMode="numeric" maxLength={15} pattern="\(\d{2}\) \d{5}-\d{4}" required type="tel" value={form.whatsapp} onChange={(event) => update('whatsapp', event.target.value)} data-testid="input-whatsapp" className="mt-2 w-full rounded-lg border border-white/15 bg-[#1e2d4a] px-3.5 py-3 text-sm text-white placeholder:text-slate-500 focus:border-[#9fe4e5] focus:outline-none" placeholder="(00) 00000-0000" />
+          <input suppressHydrationWarning id="contact-whatsapp" name="whatsapp" autoComplete="tel" inputMode="numeric" maxLength={15} pattern="\(\d{2}\) \d{5}-\d{4}" required type="tel" value={form.whatsapp} onChange={(event) => update('whatsapp', event.target.value)} data-testid="input-whatsapp" className="mt-2 w-full rounded-lg border border-white/15 bg-[#1e2d4a] px-3.5 py-3 text-sm text-white placeholder:text-slate-500 focus:border-[#9fe4e5] focus:outline-none" placeholder="(00) 00000-0000" />
         </label>
         <label htmlFor="contact-company" className="text-xs font-semibold text-slate-300">Empresa {compact ? <span className="font-normal text-slate-500">(opcional)</span> : '*'}
-          <input id="contact-company" name="organization" autoComplete="organization" required={!compact} value={form.company} onChange={(event) => update('company', event.target.value)} data-testid="input-company" className="mt-2 w-full rounded-lg border border-white/15 bg-[#1e2d4a] px-3.5 py-3 text-sm text-white placeholder:text-slate-500 focus:border-[#9fe4e5] focus:outline-none" placeholder="Nome da empresa" />
+          <input suppressHydrationWarning id="contact-company" name="organization" autoComplete="organization" required={!compact} value={form.company} onChange={(event) => update('company', event.target.value)} data-testid="input-company" className="mt-2 w-full rounded-lg border border-white/15 bg-[#1e2d4a] px-3.5 py-3 text-sm text-white placeholder:text-slate-500 focus:border-[#9fe4e5] focus:outline-none" placeholder="Nome da empresa" />
         </label>
-        {compact ? <>
+        {compact || showContext ? <>
           <label htmlFor="contact-objective" className="text-xs font-semibold text-slate-300">O que você busca agora?
-            <select id="contact-objective" name="objective" value={form.objective} onChange={(event) => update('objective', event.target.value)} className="mt-2 w-full appearance-none rounded-lg border border-white/15 bg-[#1e2d4a] px-3.5 py-3 text-sm text-white focus:border-[#9fe4e5] focus:outline-none">
+            <select suppressHydrationWarning id="contact-objective" name="objective" value={form.objective} onChange={(event) => update('objective', event.target.value)} className="mt-2 w-full appearance-none rounded-lg border border-white/15 bg-[#1e2d4a] px-3.5 py-3 text-sm text-white focus:border-[#9fe4e5] focus:outline-none">
               <option value="">Selecione uma opção</option>
               {LEAD_OBJECTIVE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
           </label>
           <label htmlFor="contact-budget" className="text-xs font-semibold text-slate-300">Investimento mensal em marketing
-            <select id="contact-budget" name="marketing_budget" value={form.marketing_budget} onChange={(event) => update('marketing_budget', event.target.value)} className="mt-2 w-full appearance-none rounded-lg border border-white/15 bg-[#1e2d4a] px-3.5 py-3 text-sm text-white focus:border-[#9fe4e5] focus:outline-none">
+            <select suppressHydrationWarning id="contact-budget" name="marketing_budget" value={form.marketing_budget} onChange={(event) => update('marketing_budget', event.target.value)} className="mt-2 w-full appearance-none rounded-lg border border-white/15 bg-[#1e2d4a] px-3.5 py-3 text-sm text-white focus:border-[#9fe4e5] focus:outline-none">
               <option value="">Selecione uma faixa</option>
               {MARKETING_BUDGET_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
           </label>
         </> : <label htmlFor="contact-service" className="text-xs font-semibold text-slate-300">Como podemos ajudar?
-          <select id="contact-service" name="service" value={form.service} onChange={(event) => update('service', event.target.value)} data-testid="select-service" className="mt-2 w-full appearance-none rounded-lg border border-white/15 bg-[#1e2d4a] px-3.5 py-3 text-sm text-white focus:border-[#9fe4e5] focus:outline-none">
+          <select suppressHydrationWarning id="contact-service" name="service" value={form.service} onChange={(event) => update('service', event.target.value)} data-testid="select-service" className="mt-2 w-full appearance-none rounded-lg border border-white/15 bg-[#1e2d4a] px-3.5 py-3 text-sm text-white focus:border-[#9fe4e5] focus:outline-none">
             <option value="">Selecione um serviço</option>
             {SERVICES.map((service) => <option key={service.slug} value={service.slug}>{service.label}</option>)}
           </select>
         </label>}
       </div>
       <label htmlFor="contact-message" className="mt-4 block text-xs font-semibold text-slate-300">Um pouco sobre o desafio
-        <textarea id="contact-message" name="message" autoComplete="off" value={form.message} onChange={(event) => update('message', event.target.value)} data-testid="textarea-message" rows={4} className="mt-2 w-full resize-none rounded-lg border border-white/15 bg-[#1e2d4a] px-3.5 py-3 text-sm text-white placeholder:text-slate-500 focus:border-[#9fe4e5] focus:outline-none" placeholder="O que você quer transformar nos próximos meses?" />
+        <textarea suppressHydrationWarning id="contact-message" name="message" autoComplete="off" value={form.message} onChange={(event) => update('message', event.target.value)} data-testid="textarea-message" rows={4} className="mt-2 w-full resize-none rounded-lg border border-white/15 bg-[#1e2d4a] px-3.5 py-3 text-sm text-white placeholder:text-slate-500 focus:border-[#9fe4e5] focus:outline-none" placeholder={messagePlaceholder || 'O que você quer transformar nos próximos meses?'} />
       </label>
       <div className="mt-4 rounded-lg border border-white/10 bg-[#1e2d4a]/60 p-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -1516,40 +1561,124 @@ function Home() {
     'Consultoria de Marketing em Fortaleza',
     'Consultoria de marketing em Fortaleza para empresas que buscam clareza, estratégia e crescimento. Marca, tráfego, processos e pessoas trabalhando juntos.',
   );
-  const vgSystem = [
-    { number: '01', label: 'Demanda', title: 'Atrair o que faz sentido.', text: 'Criamos movimento comercial com posicionamento, mídia e conteúdo orientados ao negócio.', tone: 'bg-[#c88982]', textTone: 'text-[#202f4d]' },
-    { number: '02', label: 'Sistemas', title: 'Conectar as ferramentas.', text: 'Organizamos site, CRM, dados e canais para o marketing não depender de improviso.', tone: 'bg-[#d7bd91]', textTone: 'text-[#202f4d]' },
-    { number: '03', label: 'Processos', title: 'Fazer acontecer melhor.', text: 'Estruturamos rotinas, prioridades e indicadores para transformar esforço em consistência.', tone: 'bg-[#9fd6d7]', textTone: 'text-[#202f4d]' },
-    { number: '04', label: 'Pessoas', title: 'Dar direção ao time.', text: 'Selecionamos, treinamos e lideramos as pessoas certas para o próximo estágio.', tone: 'bg-[#202f4d]', textTone: 'text-white' },
-  ];
-  const businessNeeds = [
-    { title: 'Quero vender mais pela internet', text: 'Organizamos aquisição, mídia e conversão para transformar atenção em oportunidades mais qualificadas.', service: 'trafego-pago' },
-    { title: 'Quero estruturar minha própria equipe de marketing', text: 'Montamos a base para sua empresa ter pessoas, processos e rotina próprios de marketing.', service: 'internalizacao-de-marketing' },
-    { title: 'Quero treinar e capacitar meu time atual', text: 'Damos direção prática para o time executar com mais critério, autonomia e consistência.', service: 'internalizacao-de-marketing' },
-    { title: 'Quero um marketing gerenciado pela VG', text: 'Assumimos a liderança estratégica e a cadência do marketing como uma extensão do seu negócio.', service: 'manager-as-a-service' },
-    { title: 'Quero fortalecer minha marca e presença', text: 'Ajustamos a forma como sua marca é percebida e traduzimos essa direção em presença contínua.', service: 'branding' },
-  ];
+  const [activeTestimonial, setActiveTestimonial] = useState(0);
+  const currentTestimonial = HOME_TESTIMONIALS[activeTestimonial];
+  const testimonialTone = ['bg-[#dce7f0]', 'bg-[#d7bd91]', 'bg-[#9fd6d7]', 'bg-[#c88982]'][activeTestimonial];
+
   return (
     <div className="site-shell art-directed overflow-hidden">
-      <section className="home-hero relative min-h-[760px] bg-[#202f4d] text-white lg:min-h-[900px]">
-        <div className="absolute inset-0 bg-grid-dark opacity-60" />
-        <div className="pointer-events-none absolute -left-32 top-48 h-80 w-80 rounded-full bg-[#58739f]/20 blur-3xl" />
-        <div className="pointer-events-none absolute right-[-6rem] top-64 h-96 w-96 rounded-full bg-[#9fe4e5]/10 blur-3xl" />
-        <div className="pointer-events-none absolute bottom-[-5rem] left-[42%] h-48 w-48 rounded-full bg-[#c88982]/10 blur-3xl" />
-        <div className="absolute -right-40 top-32 h-[480px] w-[480px] rounded-full border border-[#b8d9da]/12 lg:h-[720px] lg:w-[720px]" />
-        <div className="absolute -right-16 top-48 h-[330px] w-[330px] rounded-full border border-[#b8d9da]/16 lg:h-[520px] lg:w-[520px]" />
+      <section className="home-hero relative bg-[#202f4d] text-white">
+        <div className="absolute inset-0 bg-grid-dark opacity-30" />
+        <div className="pointer-events-none absolute -right-40 top-28 h-[620px] w-[620px] rounded-full border border-[#9fe4e5]/15" />
         <Header />
-        <div className="relative mx-auto grid min-h-[760px] max-w-7xl items-center gap-12 px-5 pb-20 pt-32 lg:min-h-[900px] lg:grid-cols-[1.05fr_.95fr] lg:gap-16 lg:px-10 lg:pt-36">
-          <div className="max-w-4xl">
-            <div className="reveal mb-8 flex items-center gap-3 font-mono-vg text-[10px] uppercase tracking-[.22em] text-[#b8d9da]"><span className="h-2 w-2 rounded-full bg-[#b8d9da]" /> Consultoria de marketing para o próximo passo</div>
-            <h1 className="reveal reveal-delay-1 max-w-5xl font-display text-6xl font-semibold leading-[.91] tracking-[-.055em] sm:text-8xl lg:text-[8.4rem]">Clareza para<br /><span className="text-[#b8d9da]">crescer.</span></h1>
-            <div className="reveal reveal-delay-2 mt-10 flex max-w-xl flex-col gap-8 sm:flex-row sm:items-end">
-              <p className="text-base leading-7 text-slate-300">A VG Marketing, consultoria de marketing em Fortaleza, transforma estratégia em movimento: decisões melhores, execução possível e crescimento que faz sentido para o seu negócio.</p>
-              <Link href="/#contato" data-testid="link-hero-cta" className="button-lift flex shrink-0 items-center gap-2 rounded-lg bg-[#9fe4e5] px-5 py-3.5 text-sm font-extrabold text-[#202f4d]">Começar conversa <ArrowDownRight className="h-4 w-4" /></Link>
+        <div className="relative mx-auto grid max-w-7xl items-center gap-14 px-5 pb-24 pt-32 lg:grid-cols-[.93fr_1.07fr] lg:px-10 lg:pb-32 lg:pt-36">
+          <div className="reveal">
+            <p className="flex items-center gap-3 font-mono-vg text-[10px] uppercase tracking-[.22em] text-[#b8d9da]"><span className="h-2 w-2 rounded-full bg-[#b8d9da]" />Consultoria de marketing para o próximo passo</p>
+            <h1 className="mt-8 max-w-3xl font-display text-6xl font-semibold leading-[.89] tracking-[-.06em] sm:text-8xl lg:text-[8.2rem]">Clareza<br /><span className="text-[#b8d9da]">para crescer.</span></h1>
+            <p className="mt-10 max-w-lg text-base leading-8 text-slate-300">A VG Marketing, consultoria de marketing em Fortaleza, transforma estratégia em movimento: decisões melhores, execução possível e crescimento que faz sentido para o seu negócio.</p>
+            <Link href="/#necessidades" data-testid="link-hero-cta" className="mt-8 flex w-fit items-center gap-2 text-sm font-extrabold text-[#9fe4e5]">Entender como atuamos <ArrowDownRight className="h-4 w-4" /></Link>
+          </div>
+          <div id="contato" className="reveal reveal-delay-2 w-full">
+            <ContactForm showContext />
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-[#d9e0e9] bg-[#f5f7fa] px-5 py-20 lg:px-10 lg:py-28">
+        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[.6fr_1.4fr]">
+          <div>
+            <p className="font-mono-vg text-[10px] uppercase tracking-[.2em] text-[#58739f]">/ por que a VG</p>
+            <p className="mt-5 max-w-xs text-sm leading-7 text-[#62728a]">Somos uma parceira para momentos em que crescer exige mais do que uma boa ideia.</p>
+          </div>
+          <div>
+            <h2 className="max-w-3xl font-display text-4xl font-semibold leading-[1.03] tracking-[-.04em] text-[#202f4d] sm:text-6xl">O marketing não precisa de mais barulho. Precisa de <span className="text-[#58739f]">direção.</span></h2>
+            <div className="mt-12 grid gap-6 border-t border-[#d9e0e9] pt-6 sm:grid-cols-3">
+              {[['01', 'Clareza', 'O que importa agora.'], ['02', 'Ritmo', 'Quem faz, como e quando.'], ['03', 'Avanço', 'O que mudou de verdade.']].map(([number, title, text]) => (
+                <div key={number}><span className="font-mono-vg text-[10px] text-[#9caac0]">{number}</span><h3 className="mt-3 font-display text-xl font-semibold text-[#202f4d]">{title}</h3><p className="mt-2 text-xs leading-5 text-[#718096]">{text}</p></div>
+              ))}
             </div>
           </div>
-          <div id="contato" className="reveal reveal-delay-2 w-full max-w-xl justify-self-end">
-            <ContactForm />
+        </div>
+      </section>
+
+      <section id="necessidades" className="border-y border-[#b8c6d7] bg-[#e6edf4] px-5 py-20 lg:px-10 lg:py-28">
+        <div className="mx-auto max-w-7xl">
+          <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+            <div>
+              <p className="font-mono-vg text-[10px] uppercase tracking-[.2em] text-[#58739f]">/ seu próximo passo</p>
+              <h2 className="mt-5 max-w-3xl font-display text-4xl font-semibold leading-[1.03] tracking-[-.04em] text-[#202f4d] sm:text-6xl">Seis perguntas.<br /><span className="text-[#58739f]">Um caminho possível.</span></h2>
+            </div>
+            <p className="max-w-xs text-sm leading-6 text-[#62728a]">Cada necessidade abre uma conversa diferente — e aponta para uma frente de atuação da VG.</p>
+          </div>
+          <div className="mt-14 grid gap-4 md:grid-cols-2">
+            {HOME_NEEDS.map((need, index) => (
+              <article key={need.title} className={`group relative min-h-[290px] overflow-hidden rounded-[1.35rem] p-7 ${need.tone} ${need.textTone} ${index === HOME_NEEDS.length - 1 ? 'md:col-span-2 md:min-h-[250px]' : ''}`}>
+                <div className="relative z-10 flex items-start justify-between"><span className="font-mono-vg text-[10px] tracking-[.15em] opacity-70">{need.index} / {need.kicker}</span><MoveUpRight className="h-5 w-5 opacity-70 transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1" /></div>
+                <div className="relative z-10 mt-16 max-w-xl"><h3 className="font-display text-3xl font-semibold leading-[.98] tracking-[-.03em] sm:text-4xl">{need.title}</h3><p className="mt-4 max-w-lg text-sm leading-6 opacity-80">{need.text}</p><p className="mt-5 text-xs font-extrabold opacity-70">{need.detail}</p></div>
+                <div className="absolute -bottom-24 -right-16 h-64 w-64 rounded-full border border-current/15 transition-transform duration-500 group-hover:scale-110" />
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-[#202f4d] px-5 py-20 text-white lg:px-10 lg:py-28">
+        <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[.7fr_1.3fr]">
+          <div><p className="font-mono-vg text-[10px] uppercase tracking-[.2em] text-[#9fe4e5]">/ nosso jeito</p><h2 className="mt-5 font-display text-4xl font-semibold leading-[1.03] tracking-[-.04em] sm:text-6xl">A gente não chega com um pacote.<br /><span className="text-[#9fe4e5]">Chega com perguntas.</span></h2></div>
+          <div><p className="max-w-2xl text-base leading-8 text-slate-300">Antes de propor qualquer solução, entendemos o que está por trás do desafio: o momento da empresa, as pessoas, a oferta, a operação e os sinais que já existem.</p><div className="mt-12 grid gap-6 border-t border-white/15 pt-6 sm:grid-cols-3">{['Contexto antes de canal', 'Critério antes de velocidade', 'Aprendizado antes de escala'].map((item, index) => <div key={item}><span className="font-mono-vg text-[10px] text-[#9fe4e5]">0{index + 1}</span><p className="mt-3 text-sm font-bold leading-6 text-white">{item}</p></div>)}</div></div>
+        </div>
+      </section>
+
+      <section id="prova" className="bg-[#f5f7fa] px-5 py-20 lg:px-10 lg:py-28">
+        <div className="mx-auto max-w-7xl">
+          <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
+            <div><p className="font-mono-vg text-[10px] uppercase tracking-[.2em] text-[#58739f]">/ sinais de confiança</p><h2 className="mt-5 font-display text-4xl font-semibold tracking-[-.04em] text-[#202f4d] sm:text-6xl">Crescimento bom<br /><span className="text-[#58739f]">deixa pistas.</span></h2></div>
+            <div className="flex items-center gap-3">
+              <span className="font-mono-vg text-[10px] uppercase tracking-[.16em] text-[#9caac0]">0{activeTestimonial + 1} / 04</span>
+              <button type="button" aria-label="Depoimento anterior" onClick={() => setActiveTestimonial((current) => (current - 1 + HOME_TESTIMONIALS.length) % HOME_TESTIMONIALS.length)} className="flex h-10 w-10 items-center justify-center rounded-full border border-[#c5d2df] text-[#202f4d] transition-colors hover:border-[#58739f] hover:bg-[#dce7f0]"><ArrowLeft className="h-4 w-4" /></button>
+              <button type="button" aria-label="Próximo depoimento" onClick={() => setActiveTestimonial((current) => (current + 1) % HOME_TESTIMONIALS.length)} className="flex h-10 w-10 items-center justify-center rounded-full border border-[#c5d2df] bg-[#202f4d] text-[#9fe4e5] transition-colors hover:bg-[#58739f]"><ArrowRight className="h-4 w-4" /></button>
+            </div>
+          </div>
+          <div aria-live="polite" className="mt-14">
+            <blockquote className={`min-h-[360px] rounded-[1.5rem] p-7 transition-colors sm:min-h-[390px] sm:p-12 ${testimonialTone}`}>
+              <div className="flex h-full flex-col justify-between">
+                <div><Quote className="h-7 w-7 text-[#58739f]" /><p className="mt-10 max-w-4xl font-display text-2xl font-medium leading-[1.18] tracking-[-.025em] text-[#202f4d] sm:text-4xl">“{currentTestimonial[3]}”</p></div>
+                <footer className="mt-12 flex items-center gap-3 text-xs text-[#202f4d]"><span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#202f4d] font-bold text-[#9fe4e5]">{currentTestimonial[0]}</span><span><b>{currentTestimonial[1]}</b><br /><span className="opacity-70">{currentTestimonial[2]}</span></span></footer>
+              </div>
+            </blockquote>
+            <div className="mt-5 flex justify-center gap-2">{HOME_TESTIMONIALS.map((testimonial, index) => <button type="button" key={testimonial[1]} aria-label={`Ver depoimento ${index + 1}`} aria-current={index === activeTestimonial} onClick={() => setActiveTestimonial(index)} className={`h-1.5 rounded-full transition-all ${index === activeTestimonial ? 'w-10 bg-[#202f4d]' : 'w-5 bg-[#c5d2df] hover:bg-[#58739f]'}`} />)}</div>
+          </div>
+        </div>
+      </section>
+
+      <Footer />
+    </div>
+  );
+}
+
+function LegacyHome() {
+  usePageMeta(
+    'Consultoria de Marketing em Fortaleza',
+    'Consultoria de marketing em Fortaleza para empresas que buscam clareza, estratégia e crescimento. Marca, tráfego, processos e pessoas trabalhando juntos.',
+  );
+  const [activeTestimonial, setActiveTestimonial] = useState(0);
+  const currentTestimonial = HOME_TESTIMONIALS[activeTestimonial];
+  const testimonialTone = ['bg-[#dce7f0]', 'bg-[#d7bd91]', 'bg-[#9fd6d7]', 'bg-[#c88982]'][activeTestimonial];
+  return (
+    <div className="site-shell art-directed overflow-hidden">
+      <section className="home-hero relative bg-[#202f4d] text-white">
+        <div className="absolute inset-0 bg-grid-dark opacity-30" />
+        <div className="pointer-events-none absolute -right-40 top-28 h-[620px] w-[620px] rounded-full border border-[#9fe4e5]/15" />
+        <Header />
+        <div className="relative mx-auto grid max-w-7xl items-center gap-14 px-5 pb-24 pt-32 lg:grid-cols-[.93fr_1.07fr] lg:px-10 lg:pb-32 lg:pt-36">
+          <div className="reveal">
+            <div className="flex items-center gap-3 font-mono-vg text-[10px] uppercase tracking-[.22em] text-[#b8d9da]"><span className="h-2 w-2 rounded-full bg-[#b8d9da]" />Consultoria de marketing para o próximo passo</div>
+            <h1 className="mt-8 max-w-3xl font-display text-6xl font-semibold leading-[.89] tracking-[-.06em] sm:text-8xl lg:text-[8.2rem]">Clareza<br /><span className="text-[#b8d9da]">para crescer.</span></h1>
+            <p className="mt-10 max-w-lg text-base leading-8 text-slate-300">A VG Marketing, consultoria de marketing em Fortaleza, transforma estratégia em movimento: decisões melhores, execução possível e crescimento que faz sentido para o seu negócio.</p>
+            <Link href="/#necessidades" data-testid="link-hero-cta" className="mt-8 flex w-fit items-center gap-2 text-sm font-extrabold text-[#9fe4e5]">Entender como atuamos <ArrowDownRight className="h-4 w-4" /></Link>
+          </div>
+          <div id="contato" className="reveal reveal-delay-2 w-full">
+            <ContactForm showContext />
           </div>
         </div>
       </section>
@@ -1607,37 +1736,31 @@ function Home() {
         </div>
       </section>
 
-      <section id="servicos" className="bg-[#f5f7fa]">
-        <div className="mx-auto max-w-7xl px-5 py-20 lg:px-10 lg:py-28">
-          <div className="mb-14 flex flex-col justify-between gap-6 md:flex-row md:items-end">
-            <DarkSectionHeading eyebrow="/ como atuamos" title={<>O sistema VG organiza o marketing para o negócio <span className="text-[#58739f]">avançar.</span></>} />
-            <p className="max-w-xs text-sm leading-6 text-[#56657d]">Quatro frentes conectadas para transformar demanda em operação, e operação em crescimento.</p>
+      <section id="necessidades" className="border-y border-[#b8c6d7] bg-[#e6edf4] px-5 py-20 lg:px-10 lg:py-28">
+        <div className="mx-auto max-w-7xl">
+          <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+            <div>
+              <p className="font-mono-vg text-[10px] uppercase tracking-[.2em] text-[#58739f]">/ seu próximo passo</p>
+              <h2 className="mt-5 max-w-3xl font-display text-4xl font-semibold leading-[1.03] tracking-[-.04em] text-[#202f4d] sm:text-6xl">Seis perguntas.<br /><span className="text-[#58739f]">Um caminho possível.</span></h2>
+            </div>
+            <p className="max-w-xs text-sm leading-6 text-[#62728a]">Cada necessidade abre uma conversa diferente — e aponta para uma frente de atuação da VG.</p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {vgSystem.map((pillar) => (
-              <article key={pillar.label} className={`system-card group relative flex min-h-[310px] flex-col justify-between overflow-hidden rounded-2xl p-6 ${pillar.tone} ${pillar.textTone}`}>
-                <div className="relative z-10 flex items-start justify-between"><span className="font-mono-vg text-[10px] tracking-[.15em] opacity-70">{pillar.number} / {pillar.label}</span><ArrowUpRightIcon className="h-4 w-4 opacity-70 transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1" /></div>
-                <div className="relative z-10"><h3 className="max-w-[12rem] font-display text-3xl font-semibold leading-[.98] tracking-[-.035em]">{pillar.title}</h3><p className="mt-4 max-w-[15rem] text-sm leading-6 opacity-80">{pillar.text}</p></div>
-                <div className="absolute -bottom-20 -right-16 h-52 w-52 rounded-full border border-current/15 transition-transform duration-500 group-hover:scale-125" />
-                <div className="absolute -bottom-12 -right-8 h-32 w-32 rounded-full border border-current/10" />
+          <div className="mt-14 grid gap-4 md:grid-cols-2">
+            {HOME_NEEDS.map((need, index) => (
+              <article key={need.title} className={`group relative min-h-[290px] overflow-hidden rounded-[1.35rem] p-7 ${need.tone} ${need.textTone} ${index === HOME_NEEDS.length - 1 ? 'md:col-span-2 md:min-h-[250px]' : ''}`}>
+                <div className="relative z-10 flex items-start justify-between"><span className="font-mono-vg text-[10px] tracking-[.15em] opacity-70">{need.index} / {need.kicker}</span><MoveUpRight className="h-5 w-5 opacity-70 transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1" /></div>
+                <div className="relative z-10 mt-16 max-w-xl"><h3 className="font-display text-3xl font-semibold leading-[.98] tracking-[-.03em] sm:text-4xl">{need.title}</h3><p className="mt-4 max-w-lg text-sm leading-6 opacity-80">{need.text}</p><p className="mt-5 text-xs font-extrabold opacity-70">{need.detail}</p></div>
+                <div className="absolute -bottom-24 -right-16 h-64 w-64 rounded-full border border-current/15 transition-transform duration-500 group-hover:scale-110" />
               </article>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="border-y border-[#b8c6d7] bg-[#e6edf4]">
-        <div className="mx-auto max-w-7xl px-5 py-20 lg:px-10 lg:py-28">
-          <div className="mb-12 flex flex-col justify-between gap-5 md:flex-row md:items-end">
-            <DarkSectionHeading eyebrow="/ seu próximo passo" title={<>Qual mudança o seu negócio<br />precisa fazer <span className="text-[#58739f]">agora?</span></>} />
-            <p className="max-w-xs text-sm leading-6 text-[#56657d]">Cada necessidade abre uma conversa diferente — e aponta para uma frente de atuação da VG.</p>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {businessNeeds.map((need, index) => {
-              const service = serviceBySlug(need.service);
-              return <article key={need.title} className="group flex min-h-[230px] flex-col justify-between rounded-2xl border border-[#cbd7e3] bg-[#f8fafc] p-6 transition-all hover:-translate-y-1 hover:border-[#58739f] hover:shadow-[0_16px_35px_rgba(32,47,77,.1)]"><div><span className="font-mono-vg text-[10px] tracking-[.15em] text-[#58739f]">0{index + 1} / NECESSIDADE</span><h3 className="mt-5 max-w-xs font-display text-2xl font-semibold leading-[1.02] tracking-[-.03em] text-[#202f4d]">{need.title}</h3><p className="mt-4 max-w-sm text-sm leading-6 text-[#56657d]">{need.text}</p></div>{service && <Link href={`/servicos/${service.slug}`} className="mt-7 flex items-center gap-2 text-xs font-extrabold text-[#202f4d] transition-colors group-hover:text-[#58739f]">Conheça {service.label} <ArrowUpRightIcon className="text-current" /></Link>}</article>;
-            })}
-          </div>
+      <section className="bg-[#202f4d] px-5 py-20 text-white lg:px-10 lg:py-28">
+        <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[.7fr_1.3fr]">
+          <div><p className="font-mono-vg text-[10px] uppercase tracking-[.2em] text-[#9fe4e5]">/ nosso jeito</p><h2 className="mt-5 font-display text-4xl font-semibold leading-[1.03] tracking-[-.04em] sm:text-6xl">A gente não chega com um pacote.<br /><span className="text-[#9fe4e5]">Chega com perguntas.</span></h2></div>
+          <div><p className="max-w-2xl text-base leading-8 text-slate-300">Antes de propor qualquer solução, entendemos o que está por trás do desafio: o momento da empresa, as pessoas, a oferta, a operação e os sinais que já existem.</p><div className="mt-12 grid gap-6 border-t border-white/15 pt-6 sm:grid-cols-3">{['Contexto antes de canal', 'Critério antes de velocidade', 'Aprendizado antes de escala'].map((item, index) => <div key={item}><span className="font-mono-vg text-[10px] text-[#9fe4e5]">0{index + 1}</span><p className="mt-3 text-sm font-bold leading-6 text-white">{item}</p></div>)}</div></div>
         </div>
       </section>
 
@@ -2173,7 +2296,7 @@ function BrandingPage({ service }: { service: Service }) {
         <div className="relative mx-auto grid max-w-7xl gap-14 px-5 pb-20 pt-36 lg:grid-cols-[1fr_1fr] lg:items-center lg:px-10 lg:pb-28 lg:pt-44">
           <div className="reveal">
             <p className="mb-6 flex items-center gap-3 font-mono-vg text-[10px] uppercase tracking-[.2em] text-[#9fe4e5]"><span className="h-2 w-2 rounded-full bg-[#9fe4e5]" /> Branding, posicionamento e presença</p>
-            <h1 className="max-w-2xl font-display text-5xl font-semibold leading-[.96] tracking-[-.05em] sm:text-6xl lg:text-[5.3rem]">Branding que faz sua marca ocupar seu lugar — sem parecer <span className="text-[#9fe4e5]">mais uma.</span></h1>
+            <h1 className="max-w-2xl font-display text-5xl font-semibold leading-[.96] tracking-[-.05em] sm:text-6xl lg:text-[5.3rem]">Branding que faz sua marca ocupar seu lugar. Sem parecer <span className="text-[#9fe4e5]">mais uma.</span></h1>
             <p className="mt-7 max-w-xl text-base leading-8 text-slate-300 sm:text-lg">Construímos a clareza, a personalidade e a consistência que fazem sua empresa ser percebida, lembrada e desejada.</p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center"><a href="#contato" data-testid="link-branding-hero-cta" className="button-lift flex w-fit items-center gap-2 rounded-lg bg-[#9fe4e5] px-5 py-3.5 text-sm font-extrabold text-[#202f4d]">Quero fortalecer minha marca <ArrowDownRight className="h-4 w-4" /></a><a href="#como-funciona-branding" data-testid="link-branding-hero-secondary" className="flex w-fit items-center gap-2 rounded-lg border border-white/20 px-5 py-3.5 text-sm font-bold text-white transition-colors hover:border-[#9fe4e5] hover:text-[#9fe4e5]">Ver o que muda <ArrowRight className="h-4 w-4" /></a></div>
             <p className="mt-5 text-xs text-slate-400">Conversa inicial para entender sua marca. Sem obrigação de contratação.</p>
@@ -2214,6 +2337,80 @@ function BrandingPage({ service }: { service: Service }) {
       <section className="bg-[#f5f7fa]"><div className="mx-auto grid max-w-7xl gap-12 px-5 py-20 lg:grid-cols-2 lg:px-10 lg:py-28"><div><p className="font-mono-vg text-[10px] uppercase tracking-[.2em] text-[#58739f]">/ o resultado</p><h2 className="mt-5 max-w-xl font-display text-4xl font-semibold leading-[1.03] tracking-[-.04em] text-[#202f4d] sm:text-6xl">Marcas fortes crescem com mais <span className="text-[#58739f]">estabilidade.</span></h2></div><div className="grid gap-0 border-t border-[#b8c6d7]">{service.deliverables.map((item, index) => <div key={item} className="flex items-start gap-4 border-b border-[#d9e0e9] py-5"><Check className="mt-1 h-4 w-4 shrink-0 text-[#58739f]" /><p className="text-sm font-bold leading-6 text-[#202f4d]">{item}</p><span className="ml-auto font-mono-vg text-[10px] text-[#9caac0]">0{index + 1}</span></div>)}</div></div></section>
 
       <section id="contato" className="bg-[#17233e]"><div className="mx-auto grid max-w-7xl gap-12 px-5 py-20 lg:grid-cols-[.85fr_1.15fr] lg:gap-20 lg:px-10 lg:py-28"><div className="flex flex-col justify-between"><div><p className="mb-5 font-mono-vg text-[10px] uppercase tracking-[.2em] text-[#9fe4e5]">/ próximo passo</p><h2 className="max-w-lg font-display text-5xl font-semibold leading-[.98] tracking-[-.045em] text-white sm:text-6xl">Sua marca já representa o tamanho que você quer alcançar?</h2><p className="mt-7 max-w-md text-base leading-8 text-slate-300">Conte o mínimo para começarmos. Vamos entender o momento da sua marca e mostrar onde existe espaço para fortalecer sua presença.</p></div><div className="mt-12 hidden items-center gap-3 text-xs text-slate-400 sm:flex"><CircleCheck className="h-4 w-4 text-[#9fe4e5]" /> Sem obrigação de contratação</div></div><ContactForm compact serviceValue="branding" /></div></section>
+      <Footer />
+    </div>
+  );
+}
+
+function SitesLandingPagesPage({ service }: { service: Service }) {
+  const pillars = [
+    { number: '01', title: 'Busca ativa', text: 'Um site otimizado ajuda sua empresa a aparecer quando alguém pesquisa por uma solução, uma categoria ou um serviço na sua região.', tone: 'bg-[#dce7f0]', icon: Search },
+    { number: '02', title: 'Ativo próprio', text: 'O site é uma presença que você controla. Ele continua trabalhando mesmo quando o algoritmo das redes muda.', tone: 'bg-[#d7bd91]', icon: Shield },
+    { number: '03', title: 'Validação', text: 'Portfólio, cases e clareza reforçam a credibilidade antes da conversa, especialmente para empresas que vendem para outras empresas.', tone: 'bg-[#c88982]', icon: Crosshair },
+    { number: '04', title: 'Disponível sempre', text: 'Seu trabalho, seus contatos e os próximos passos ficam acessíveis 24 horas por dia, sem depender de alguém estar online.', tone: 'bg-[#9fd6d7]', icon: BarChart3 },
+  ];
+  const process = [
+    ['01', 'Ler o momento', 'Entendemos a oferta, o público, o ciclo de venda e a capacidade atual de atendimento. Um site precisa caber no negócio que vai sustentá-lo.'],
+    ['02', 'Organizar a história', 'Definimos a arquitetura, as mensagens, as páginas prioritárias e os caminhos de navegação. Conteúdo antes de decoração.'],
+    ['03', 'Construir para descobrir', 'Aplicamos boas práticas técnicas, SEO, busca local e uma experiência responsiva que funciona em cada tela e contexto.'],
+    ['04', 'Colocar em movimento', 'Publicamos, conectamos mídia e CRM, acompanhamos os eventos e ajustamos a presença com base no comportamento real.'],
+  ];
+  usePageMeta(
+    'Sites e Landing Pages em Fortaleza',
+    'Criação de sites e landing pages em Fortaleza com SEO, encontrabilidade, clareza de proposta, conversão, mensuração e integração com mídia e CRM.',
+  );
+
+  return (
+    <div className="site-shell art-directed overflow-hidden">
+      <section className="relative overflow-hidden bg-[#202f4d] text-white">
+        <div className="absolute inset-0 bg-grid-dark opacity-30" />
+        <div className="pointer-events-none absolute -right-40 top-28 h-[620px] w-[620px] rounded-full border border-[#9fe4e5]/15" />
+        <Header />
+        <div className="relative mx-auto grid max-w-7xl items-center gap-14 px-5 pb-24 pt-32 lg:grid-cols-[1.05fr_.95fr] lg:px-10 lg:pb-32 lg:pt-40">
+          <div className="reveal">
+            <p className="flex items-center gap-3 font-mono-vg text-[10px] uppercase tracking-[.22em] text-[#b8d9da]"><span className="h-2 w-2 rounded-full bg-[#b8d9da]" />Sites e Landing Pages / presença digital</p>
+            <h1 className="mt-8 max-w-4xl font-display text-6xl font-semibold leading-[.9] tracking-[-.06em] sm:text-7xl lg:text-[7.6rem]">Seu site precisa ser <span className="text-[#9fe4e5]">encontrado</span> antes de ser admirado.</h1>
+            <p className="mt-9 max-w-xl text-base leading-8 text-slate-300 sm:text-lg">Criamos sites e landing pages que organizam a história da sua empresa, facilitam a descoberta e transformam intenção em conversa.</p>
+            <a href="#encontrabilidade" data-testid="link-sites-hero-cta" className="mt-8 flex w-fit items-center gap-2 text-sm font-extrabold text-[#9fe4e5]">Ver o que uma presença precisa fazer <ArrowDownRight className="h-4 w-4" /></a>
+          </div>
+          <div className="reveal reveal-delay-2 relative min-h-[360px]">
+            <div className="absolute right-0 top-0 w-full max-w-[490px] rotate-3 rounded-2xl border border-white/15 bg-[#2d4264] p-4 shadow-2xl">
+              <div className="flex items-center gap-2 border-b border-white/10 pb-3"><span className="h-2 w-2 rounded-full bg-[#c88982]" /><span className="h-2 w-2 rounded-full bg-[#d7bd91]" /><span className="h-2 w-2 rounded-full bg-[#9fe4e5]" /><span className="ml-auto font-mono-vg text-[8px] text-slate-400">presenca.digital</span></div>
+              <div className="grid gap-4 p-5">
+                <div className="h-3 w-2/5 rounded bg-[#9fe4e5]/70" />
+                <div className="h-14 w-4/5 rounded bg-white/90" />
+                <div className="h-2 w-full rounded bg-white/15" />
+                <div className="h-2 w-3/4 rounded bg-white/15" />
+                <div className="mt-4 flex gap-3"><div className="h-9 w-28 rounded bg-[#c88982]" /><div className="h-9 w-24 rounded border border-white/20" /></div>
+              </div>
+            </div>
+            <div className="absolute bottom-2 left-1 z-10 w-[72%] rounded-xl bg-[#9fe4e5] p-5 text-[#202f4d] shadow-xl">
+              <div className="flex items-center justify-between"><span className="font-mono-vg text-[9px] uppercase tracking-[.16em]">Próxima ação</span><MoveUpRight className="h-4 w-4" /></div>
+              <p className="mt-4 font-display text-2xl font-semibold leading-none">Entender se faz sentido para mim.</p>
+              <div className="mt-5 h-1.5 w-full rounded-full bg-[#202f4d]/15"><div className="h-full w-[68%] rounded-full bg-[#202f4d]" /></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-[#d9e0e9] bg-[#f5f7fa] px-5 py-20 lg:px-10 lg:py-28">
+        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[.58fr_1.42fr]"><p className="font-mono-vg text-[10px] uppercase tracking-[.2em] text-[#58739f]">/ uma entrega própria</p><div><h2 className="max-w-4xl font-display text-4xl font-semibold leading-[1.03] tracking-[-.04em] text-[#202f4d] sm:text-6xl">Branding ajuda a marca a ocupar um lugar. O site ajuda as pessoas a <span className="text-[#58739f]">chegarem até ele.</span></h2><p className="mt-8 max-w-3xl text-base leading-8 text-[#62728a]">Sites e Landing Pages é uma frente própria da VG. Ela pode caminhar ao lado do Branding, mas resolve uma pergunta diferente: como criar uma presença digital que faça sentido para a busca, para a pessoa e para a operação?</p></div></div>
+      </section>
+
+      <section id="encontrabilidade" className="bg-[#e6edf4] px-5 py-20 lg:px-10 lg:py-28">
+        <div className="mx-auto max-w-7xl">
+          <div className="flex flex-col justify-between gap-7 md:flex-row md:items-end"><div><p className="font-mono-vg text-[10px] uppercase tracking-[.2em] text-[#58739f]">/ encontrabilidade</p><h2 className="mt-5 max-w-3xl font-display text-4xl font-semibold leading-[1.02] tracking-[-.04em] text-[#202f4d] sm:text-6xl">Ser encontrado também é uma forma de <span className="text-[#58739f]">ser lembrado.</span></h2></div><p className="max-w-xs text-sm leading-6 text-[#62728a]">Um site pode capturar uma busca, validar sua empresa e trabalhar enquanto o time está em outra conversa.</p></div>
+          <div className="mt-14 grid gap-4 md:grid-cols-2">{pillars.map(({ number, title, text, tone, icon: Icon }) => <article key={number} className={`relative min-h-[235px] overflow-hidden rounded-[1.35rem] p-7 ${tone}`}><div className="relative z-10 flex items-start justify-between"><span className="font-mono-vg text-[10px] tracking-[.15em] text-[#202f4d]/70">{number} / encontrabilidade</span><Icon className="h-5 w-5 text-[#202f4d]/70" /></div><div className="relative z-10 mt-12 max-w-lg"><h3 className="font-display text-2xl font-semibold tracking-[-.03em] text-[#202f4d]">{title}</h3><p className="mt-3 text-sm leading-6 text-[#56657d]">{text}</p></div><div className="absolute -bottom-20 -right-14 h-48 w-48 rounded-full border border-[#202f4d]/10" /></article>)}</div>
+        </div>
+      </section>
+
+      <section className="bg-[#202f4d] px-5 py-20 text-white lg:px-10 lg:py-28">
+        <div className="mx-auto grid max-w-7xl gap-14 lg:grid-cols-[.72fr_1.28fr]"><div><p className="font-mono-vg text-[10px] uppercase tracking-[.2em] text-[#9fe4e5]">/ como atuamos</p><h2 className="mt-5 font-display text-4xl font-semibold leading-[1.02] tracking-[-.04em] sm:text-6xl">Estratégia que chega até a tela, ao <span className="text-[#9fe4e5]">dado e à venda.</span></h2><p className="mt-7 max-w-md text-sm leading-7 text-slate-300">Não começamos escolhendo plataforma. Começamos entendendo qual papel a presença digital precisa cumprir e quais recursos a empresa consegue sustentar.</p></div><div className="divide-y divide-white/15">{process.map(([number, title, text]) => <div key={number} className="grid gap-5 py-7 sm:grid-cols-[70px_190px_1fr]"><span className="font-mono-vg text-[10px] text-[#9fe4e5]">{number}</span><h3 className="font-display text-2xl font-semibold">{title}</h3><p className="text-sm leading-7 text-slate-300">{text}</p></div>)}</div></div>
+      </section>
+
+      <section id="contato" className="bg-[#f5f7fa] px-5 py-20 lg:px-10 lg:py-28">
+        <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[.78fr_1.22fr]"><div><p className="font-mono-vg text-[10px] uppercase tracking-[.2em] text-[#58739f]">/ vamos conversar</p><h2 className="mt-5 max-w-xl font-display text-5xl font-semibold leading-[.98] tracking-[-.05em] text-[#202f4d] sm:text-7xl">O site é parte do seu <span className="text-[#58739f]">movimento.</span></h2><p className="mt-7 max-w-md text-sm leading-7 text-[#62728a]">Se a sua presença digital precisa ser mais clara, mais encontrável ou mais próxima da operação comercial, vamos entender o cenário.</p><p className="mt-10 border-l-2 border-[#9fe4e5] pl-5 text-sm font-bold leading-6 text-[#202f4d]">Não entregamos uma vitrine isolada. Entregamos um ponto de encontro entre marca, busca, conteúdo, mídia e vendas.</p></div><ContactForm serviceValue={service.slug} showContext messagePlaceholder="O que precisa mudar nos próximos meses? Se a solicitação for sobre site ou landing page, conte o motivo." /></div>
+      </section>
       <Footer />
     </div>
   );
@@ -2427,7 +2624,7 @@ function Router() {
         <Route path="/admin" component={ProtectedAdmin} />
         <Route path="/sobre-a-vg" component={AboutPage} />
         <Route path="/cases" component={CasesPage} />
-        {SERVICES.map((service) => <Route key={service.slug} path={`/servicos/${service.slug}`}>{service.slug === 'trafego-pago' ? <PaidTrafficPage service={service} /> : service.slug === 'consultoria-de-marketing' ? <MarketingConsultingPage service={service} /> : service.slug === 'internalizacao-de-marketing' ? <InternalizationPage service={service} /> : service.slug === 'manager-as-a-service' ? <ManagerAsServicePage service={service} /> : service.slug === 'branding' ? <BrandingPage service={service} /> : service.slug === 'conteudo-para-redes-sociais' ? <SocialContentPage service={service} /> : <ServicePage service={service} />}</Route>)}
+        {SERVICES.map((service) => <Route key={service.slug} path={`/servicos/${service.slug}`}>{service.slug === 'trafego-pago' ? <PaidTrafficPage service={service} /> : service.slug === 'consultoria-de-marketing' ? <MarketingConsultingPage service={service} /> : service.slug === 'internalizacao-de-marketing' ? <InternalizationPage service={service} /> : service.slug === 'manager-as-a-service' ? <ManagerAsServicePage service={service} /> : service.slug === 'branding' ? <BrandingPage service={service} /> : service.slug === 'sites-landing-pages' ? <SitesLandingPagesPage service={service} /> : service.slug === 'conteudo-para-redes-sociais' ? <SocialContentPage service={service} /> : <ServicePage service={service} />}</Route>)}
         <Route component={NotFound} />
       </Switch>
     </ErrorBoundary>

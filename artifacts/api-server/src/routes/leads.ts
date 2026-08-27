@@ -14,6 +14,7 @@ const leadObjectives = [
   'train_current_team',
   'managed_marketing',
   'strengthen_brand',
+  'sites_landing_pages',
 ] as const;
 const marketingBudgetOptions = [
   'not_investing',
