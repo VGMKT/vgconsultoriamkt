@@ -801,25 +801,8 @@ function ContactForm({ compact = false, serviceValue = '', showContext = false, 
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
-  const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [locationStatus, setLocationStatus] = useState('');
   const [form, setForm] = useState({ name: '', email: '', whatsapp: '', company: '', service: serviceValue, objective: '', marketing_budget: '', message: '', source: detectLeadSource() });
   const update = (field: keyof typeof form, value: string) => setForm((current) => ({ ...current, [field]: field === 'whatsapp' ? formatBrazilianWhatsApp(value) : value }));
-  const requestLocation = () => {
-    if (!navigator.geolocation) {
-      setLocationStatus('Seu navegador não oferece compartilhamento de localização.');
-      return;
-    }
-    setLocationStatus('Solicitando sua autorização...');
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude });
-        setLocationStatus('Localização adicionada. Você pode enviar o formulário quando quiser.');
-      },
-      () => setLocationStatus('A localização não foi compartilhada. Você pode continuar sem ela.'),
-      { enableHighAccuracy: false, timeout: 10_000, maximumAge: 300_000 },
-    );
-  };
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!form.name || !form.email || !form.whatsapp || (!compact && !form.company)) {
@@ -838,7 +821,7 @@ function ContactForm({ compact = false, serviceValue = '', showContext = false, 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ ...form, ...(attribution || {}), ...(location || {}) }),
+        body: JSON.stringify({ ...form, ...(attribution || {}) }),
       });
       if (!response.ok) throw new Error('lead-submit-failed');
       setSubmitted(true);
@@ -863,7 +846,7 @@ function ContactForm({ compact = false, serviceValue = '', showContext = false, 
         <p className="mb-3 font-mono-vg text-[10px] uppercase tracking-[.2em] text-[#9fe4e5]">Mensagem recebida</p>
         <h3 className="font-display text-3xl font-semibold leading-tight">Solicitação recebida</h3>
         <p className="mt-4 max-w-md text-sm leading-7 text-slate-300">Recebemos sua solicitação, em breve entraremos em contato.</p>
-         <button type="button" onClick={() => { setSubmitted(false); setLocation(null); setLocationStatus(''); setForm({ name: '', email: '', whatsapp: '', company: '', service: serviceValue, objective: '', marketing_budget: '', message: '', source: detectLeadSource() }); }} data-testid="button-new-form" className="mt-8 flex w-fit items-center gap-2 text-sm font-bold text-[#9fe4e5]">Enviar outra mensagem <ArrowRight className="h-4 w-4" /></button>
+         <button type="button" onClick={() => { setSubmitted(false); setForm({ name: '', email: '', whatsapp: '', company: '', service: serviceValue, objective: '', marketing_budget: '', message: '', source: detectLeadSource() }); }} data-testid="button-new-form" className="mt-8 flex w-fit items-center gap-2 text-sm font-bold text-[#9fe4e5]">Enviar outra mensagem <ArrowRight className="h-4 w-4" /></button>
       </div>
     );
   }
@@ -910,13 +893,6 @@ function ContactForm({ compact = false, serviceValue = '', showContext = false, 
       <label htmlFor="contact-message" className="mt-4 block text-xs font-semibold text-slate-300">Um pouco sobre o desafio
         <textarea suppressHydrationWarning id="contact-message" name="message" autoComplete="off" value={form.message} onChange={(event) => update('message', event.target.value)} data-testid="textarea-message" rows={4} className="mt-2 w-full resize-none rounded-lg border border-white/15 bg-[#1e2d4a] px-3.5 py-3 text-sm text-white placeholder:text-slate-500 focus:border-[#9fe4e5] focus:outline-none" placeholder={messagePlaceholder || 'O que você quer transformar nos próximos meses?'} />
       </label>
-      <div className="mt-4 rounded-lg border border-white/10 bg-[#1e2d4a]/60 p-3">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-[11px] leading-5 text-slate-400">Opcional: compartilhe sua localização para entendermos a região do atendimento. Ela só será enviada com sua autorização.</p>
-          <button type="button" onClick={requestLocation} disabled={Boolean(location)} className="shrink-0 rounded-md border border-[#9fe4e5]/40 px-3 py-2 text-[10px] font-extrabold text-[#9fe4e5] disabled:cursor-default disabled:opacity-70">{location ? 'Localização adicionada' : 'Compartilhar localização'}</button>
-        </div>
-        {locationStatus && <p role="status" className="mt-2 text-[10px] text-slate-300">{locationStatus}</p>}
-      </div>
       {error && <p id="form-error" role="alert" aria-live="assertive" data-testid="status-form-error" className="mt-4 text-xs font-semibold text-[#ffb4a8]">{error}</p>}
       <button type="submit" disabled={sending} data-testid="button-submit-form" className="button-lift mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-[#9fe4e5] px-5 py-3.5 text-sm font-extrabold text-[#202f4d] disabled:cursor-wait disabled:opacity-70">
         {sending ? 'Agendando conversa...' : 'Agendar uma conversa'} {!sending && <ArrowRight className="h-4 w-4" />}
