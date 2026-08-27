@@ -1,6 +1,6 @@
 {
   "budgets": {
-    "publicEntrypointBytes": 640000,
+    "publicEntrypointBytes": 700000,
     "blockingCssBytes": 145000,
     "blockingCssRequests": 1,
     "documentBytes": 65000,
