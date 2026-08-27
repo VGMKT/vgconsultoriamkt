@@ -1559,7 +1559,7 @@ function DarkSectionHeading({ eyebrow, title, light = false }: { eyebrow: string
 function Home() {
   usePageMeta(
     'Consultoria de Marketing em Fortaleza',
-    'Consultoria de marketing em Fortaleza para empresas que buscam clareza, estratégia e crescimento. Marca, tráfego, processos e pessoas trabalhando juntos.',
+    'Consultoria de marketing em Fortaleza para empresas que querem crescer com estratégia, marca e resultados. Clareza para decidir e estrutura para executar.',
   );
   const [activeTestimonial, setActiveTestimonial] = useState(0);
   const currentTestimonial = HOME_TESTIMONIALS[activeTestimonial];
@@ -1574,7 +1574,7 @@ function Home() {
         <div className="relative mx-auto grid max-w-7xl items-center gap-14 px-5 pb-24 pt-32 lg:grid-cols-[.93fr_1.07fr] lg:px-10 lg:pb-32 lg:pt-36">
           <div className="reveal">
             <p className="flex items-center gap-3 font-mono-vg text-[10px] uppercase tracking-[.22em] text-[#b8d9da]"><span className="h-2 w-2 rounded-full bg-[#b8d9da]" />Consultoria de marketing para o próximo passo</p>
-            <h1 className="mt-8 max-w-3xl font-display text-6xl font-semibold leading-[.89] tracking-[-.06em] sm:text-8xl lg:text-[8.2rem]">Clareza<br /><span className="text-[#b8d9da]">para crescer.</span></h1>
+            <h1 className="mt-8 max-w-3xl font-display text-6xl font-semibold leading-[.89] tracking-[-.06em] sm:text-8xl lg:text-[8.2rem]">Consultoria de marketing<br /><span className="text-[#b8d9da]">para crescer.</span></h1>
             <p className="mt-10 max-w-lg text-base leading-8 text-slate-300">A VG Marketing, consultoria de marketing em Fortaleza, transforma estratégia em movimento: decisões melhores, execução possível e crescimento que faz sentido para o seu negócio.</p>
             <Link href="/#necessidades" data-testid="link-hero-cta" className="mt-8 flex w-fit items-center gap-2 text-sm font-extrabold text-[#9fe4e5]">Entender como atuamos <ArrowDownRight className="h-4 w-4" /></Link>
           </div>
@@ -1659,7 +1659,7 @@ function Home() {
 function LegacyHome() {
   usePageMeta(
     'Consultoria de Marketing em Fortaleza',
-    'Consultoria de marketing em Fortaleza para empresas que buscam clareza, estratégia e crescimento. Marca, tráfego, processos e pessoas trabalhando juntos.',
+    'Consultoria de marketing em Fortaleza para empresas que querem crescer com estratégia, marca e resultados. Clareza para decidir e estrutura para executar.',
   );
   const [activeTestimonial, setActiveTestimonial] = useState(0);
   const currentTestimonial = HOME_TESTIMONIALS[activeTestimonial];
@@ -1673,7 +1673,7 @@ function LegacyHome() {
         <div className="relative mx-auto grid max-w-7xl items-center gap-14 px-5 pb-24 pt-32 lg:grid-cols-[.93fr_1.07fr] lg:px-10 lg:pb-32 lg:pt-36">
           <div className="reveal">
             <div className="flex items-center gap-3 font-mono-vg text-[10px] uppercase tracking-[.22em] text-[#b8d9da]"><span className="h-2 w-2 rounded-full bg-[#b8d9da]" />Consultoria de marketing para o próximo passo</div>
-            <h1 className="mt-8 max-w-3xl font-display text-6xl font-semibold leading-[.89] tracking-[-.06em] sm:text-8xl lg:text-[8.2rem]">Clareza<br /><span className="text-[#b8d9da]">para crescer.</span></h1>
+            <h1 className="mt-8 max-w-3xl font-display text-6xl font-semibold leading-[.89] tracking-[-.06em] sm:text-8xl lg:text-[8.2rem]">Consultoria de marketing<br /><span className="text-[#b8d9da]">para crescer.</span></h1>
             <p className="mt-10 max-w-lg text-base leading-8 text-slate-300">A VG Marketing, consultoria de marketing em Fortaleza, transforma estratégia em movimento: decisões melhores, execução possível e crescimento que faz sentido para o seu negócio.</p>
             <Link href="/#necessidades" data-testid="link-hero-cta" className="mt-8 flex w-fit items-center gap-2 text-sm font-extrabold text-[#9fe4e5]">Entender como atuamos <ArrowDownRight className="h-4 w-4" /></Link>
           </div>
@@ -1824,7 +1824,7 @@ function ContactBand() {
 }
 
 function AboutPage() {
-  usePageMeta('Sobre a VG Consultoria em Marketing', 'Conheça a VG Consultoria em Marketing, parceira estratégica de empresas que buscam crescimento com clareza, estrutura e autonomia.');
+  usePageMeta('Sobre a VG: Consultoria de Marketing', 'Conheça a VG, consultoria de marketing em Fortaleza para empresas que buscam direção, posicionamento e crescimento com mais clareza, estrutura e autonomia.');
   return (
     <div className="site-shell art-directed overflow-hidden">
       <section className="relative bg-[#202f4d] text-white">
@@ -1871,8 +1871,8 @@ function AboutPage() {
 function PaidTrafficPage({ service }: { service: Service }) {
   const [openBullet, setOpenBullet] = useState<number | null>(null);
   usePageMeta(
-    'Consultoria de Tráfego Pago',
-    'Consultoria de tráfego pago para atrair leads qualificados, organizar o atendimento, aumentar conversões e escalar resultados com estratégia.',
+    'Tráfego Pago com Estratégia e Conversão',
+    'Tráfego pago com estratégia para atrair demanda qualificada, melhorar conversões e conectar campanhas, atendimento e vendas em uma operação mais eficiente.',
   );
   return (
     <div className="site-shell art-directed overflow-hidden">
@@ -2073,8 +2073,8 @@ function PaidTrafficPage({ service }: { service: Service }) {
 function MarketingConsultingPage({ service }: { service: Service }) {
   const [openBullet, setOpenBullet] = useState<number | null>(null);
   usePageMeta(
-    'Consultoria de Marketing',
-    'Estruture o marketing da sua empresa com planejamento, equipe, conteúdo estratégico e foco em resultado com a VG.',
+    'Consultoria de Marketing para Empresas',
+    'Consultoria de marketing para empresas que precisam de direção, prioridades e processos para transformar esforço disperso em crescimento previsível com a VG.',
   );
   return (
     <div className="site-shell art-directed overflow-hidden">
@@ -2085,7 +2085,7 @@ function MarketingConsultingPage({ service }: { service: Service }) {
         <div className="relative mx-auto grid max-w-7xl items-center gap-14 px-5 pb-20 pt-36 lg:min-h-[850px] lg:grid-cols-[1.02fr_.98fr] lg:gap-20 lg:px-10 lg:pt-32">
           <div className="reveal">
             <p className="mb-6 flex items-center gap-3 font-mono-vg text-[10px] uppercase tracking-[.2em] text-[#9fe4e5]"><span className="h-2 w-2 rounded-full bg-[#9fe4e5]" /> Consultoria para estruturar crescimento</p>
-            <h1 className="max-w-3xl font-display text-5xl font-semibold leading-[.94] tracking-[-.055em] sm:text-7xl lg:text-[6.2rem]">Marketing sem improviso.<br /><span className="text-[#9fe4e5]">Crescimento com método.</span></h1>
+            <h1 className="max-w-3xl font-display text-5xl font-semibold leading-[.94] tracking-[-.055em] sm:text-7xl lg:text-[6.2rem]">Consultoria de marketing<br /><span className="text-[#9fe4e5]">com método.</span></h1>
             <p className="mt-8 max-w-xl text-base leading-8 text-slate-300 sm:text-lg">A VG organiza estratégia, equipe, conteúdo e mídia para transformar marketing em resultado — não em ruído.</p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
               <a href="#contato" data-testid="link-consulting-hero-cta" className="button-lift flex w-fit items-center gap-2 rounded-lg bg-[#9fe4e5] px-5 py-3.5 text-sm font-extrabold text-[#202f4d]">Quero estruturar meu marketing <ArrowDownRight className="h-4 w-4" /></a>
@@ -2168,8 +2168,8 @@ function MarketingConsultingPage({ service }: { service: Service }) {
 function InternalizationPage({ service }: { service: Service }) {
   const [openBullet, setOpenBullet] = useState<number | null>(null);
   usePageMeta(
-    'Internalização de Marketing e Vendas',
-    'Monte um time interno de marketing e vendas eficiente, treinado e alinhado para crescer com controle, processos claros e autonomia.',
+    'Internalização de Marketing para Empresas',
+    'Internalização de marketing para formar um time próprio, organizar processos e ganhar autonomia sem perder velocidade, clareza ou conexão com as vendas.',
   );
   const roles = ['Social Media', 'Designer', 'Gestor de Tráfego Pago', 'SDR / pré-vendas', 'BDR / prospecção ativa', 'Vendedor de Inside Sales'];
   return (
@@ -2181,7 +2181,7 @@ function InternalizationPage({ service }: { service: Service }) {
         <div className="relative mx-auto grid max-w-7xl gap-12 px-5 pb-20 pt-36 lg:grid-cols-[.9fr_1.1fr] lg:items-end lg:px-10 lg:pb-28 lg:pt-48">
           <div className="reveal">
             <p className="mb-6 flex items-center gap-3 font-mono-vg text-[10px] uppercase tracking-[.2em] text-[#9fe4e5]"><span className="h-2 w-2 rounded-full bg-[#9fe4e5]" /> Estrutura para crescer por dentro</p>
-            <h1 className="max-w-3xl font-display text-5xl font-semibold leading-[.94] tracking-[-.055em] sm:text-7xl lg:text-[6.4rem]">Pare de depender.<br /><span className="text-[#9fe4e5]">Comece a construir.</span></h1>
+            <h1 className="max-w-3xl font-display text-5xl font-semibold leading-[.94] tracking-[-.055em] sm:text-7xl lg:text-[6.4rem]">Internalização de marketing.<br /><span className="text-[#9fe4e5]">Comece a construir.</span></h1>
             <p className="mt-8 max-w-xl text-base leading-8 text-slate-300 sm:text-lg">Monte um time interno de marketing e vendas eficiente, treinado e alinhado aos objetivos do seu negócio.</p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center"><a href="#contato" data-testid="link-internalization-hero-cta" className="button-lift flex w-fit items-center gap-2 rounded-lg bg-[#9fe4e5] px-5 py-3.5 text-sm font-extrabold text-[#202f4d]">Quero montar meu time <ArrowDownRight className="h-4 w-4" /></a><a href="#como-funciona-internalizacao" data-testid="link-internalization-hero-secondary" className="flex w-fit items-center gap-2 rounded-lg border border-white/20 px-5 py-3.5 text-sm font-bold text-white transition-colors hover:border-[#9fe4e5] hover:text-[#9fe4e5]">Entender o processo <ArrowRight className="h-4 w-4" /></a></div>
             <p className="mt-5 text-xs text-slate-400">Conversa inicial para entender a sua estrutura. Sem obrigação de contratação.</p>
@@ -2232,8 +2232,8 @@ function InternalizationPage({ service }: { service: Service }) {
 function ManagerAsServicePage({ service }: { service: Service }) {
   const [openBullet, setOpenBullet] = useState<number | null>(null);
   usePageMeta(
-    'Marketing Manager as a Service | VG',
-    'Liderança estratégica de marketing sob demanda para organizar equipe, prioridades, processos e performance com a VG.',
+    'Liderança de Marketing sob Medida',
+    'Liderança de marketing sob medida para conectar equipe, parceiros e prioridades, transformar planos em execução e acompanhar resultados com mais clareza.',
   );
   return (
     <div className="site-shell art-directed overflow-hidden">
@@ -2244,7 +2244,7 @@ function ManagerAsServicePage({ service }: { service: Service }) {
           <div className="grid gap-14 lg:grid-cols-[.94fr_1.06fr] lg:items-center">
             <div className="reveal">
               <p className="mb-6 flex items-center gap-3 font-mono-vg text-[10px] uppercase tracking-[.2em] text-[#9fe4e5]"><span className="h-2 w-2 rounded-full bg-[#9fe4e5]" /> Liderança de marketing sob demanda</p>
-              <h1 className="max-w-2xl font-display text-5xl font-semibold leading-[.97] tracking-[-.05em] sm:text-6xl lg:text-[5.15rem]">Seu marketing não precisa de mais tarefas.<br /><span className="text-[#9fe4e5]">Precisa de liderança.</span></h1>
+              <h1 className="max-w-2xl font-display text-5xl font-semibold leading-[.97] tracking-[-.05em] sm:text-6xl lg:text-[5.15rem]">Liderança de marketing<br /><span className="text-[#9fe4e5]">no ritmo certo.</span></h1>
               <p className="mt-7 max-w-xl text-base leading-8 text-slate-300 sm:text-lg">A VG atua como seu Marketing Manager as a Service: planeja, organiza, lidera e acompanha cada frente para fazer o marketing andar com foco em performance.</p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center"><a href="#contato" data-testid="link-manager-hero-cta" className="button-lift flex w-fit items-center gap-2 rounded-lg bg-[#9fe4e5] px-5 py-3.5 text-sm font-extrabold text-[#202f4d]">Quero uma liderança para o marketing <ArrowDownRight className="h-4 w-4" /></a><a href="#como-funciona-manager" data-testid="link-manager-hero-secondary" className="flex w-fit items-center gap-2 rounded-lg border border-white/20 px-5 py-3.5 text-sm font-bold text-white transition-colors hover:border-[#9fe4e5] hover:text-[#9fe4e5]">Ver como ajuda <ArrowRight className="h-4 w-4" /></a></div>
               <p className="mt-5 text-xs text-slate-400">Conversa inicial para entender seu momento. Sem obrigação de contratação.</p>
@@ -2285,8 +2285,8 @@ function ManagerAsServicePage({ service }: { service: Service }) {
 function BrandingPage({ service }: { service: Service }) {
   const [openBullet, setOpenBullet] = useState<number | null>(null);
   usePageMeta(
-    'Branding e Posicionamento de Marca',
-    'Construa uma marca reconhecida, lembrada e desejada com posicionamento, identidade visual e presença digital estratégica.',
+    'Branding e Identidade de Marca',
+    'Branding e identidade de marca para empresas que querem se diferenciar, comunicar seu valor e construir uma presença mais reconhecida e consistente no mercado.',
   );
   return (
     <div className="site-shell overflow-hidden">
@@ -2356,8 +2356,8 @@ function SitesLandingPagesPage({ service }: { service: Service }) {
     ['04', 'Colocar em movimento', 'Publicamos, conectamos mídia e CRM, acompanhamos os eventos e ajustamos a presença com base no comportamento real.'],
   ];
   usePageMeta(
-    'Sites e Landing Pages em Fortaleza',
-    'Criação de sites e landing pages em Fortaleza com SEO, encontrabilidade, clareza de proposta, conversão, mensuração e integração com mídia e CRM.',
+    'Sites e Landing Pages que Convertem',
+    'Criação de sites e landing pages com SEO e clareza de proposta para sua empresa ser encontrada, gerar confiança e transformar visitas em conversas comerciais.',
   );
 
   return (
@@ -2369,7 +2369,7 @@ function SitesLandingPagesPage({ service }: { service: Service }) {
         <div className="relative mx-auto grid max-w-7xl items-center gap-14 px-5 pb-24 pt-32 lg:grid-cols-[1.05fr_.95fr] lg:px-10 lg:pb-32 lg:pt-40">
           <div className="reveal">
             <p className="flex items-center gap-3 font-mono-vg text-[10px] uppercase tracking-[.22em] text-[#b8d9da]"><span className="h-2 w-2 rounded-full bg-[#b8d9da]" />Sites e Landing Pages / presença digital</p>
-            <h1 className="mt-8 max-w-4xl font-display text-6xl font-semibold leading-[.9] tracking-[-.06em] sm:text-7xl lg:text-[7.6rem]">Seu site precisa ser <span className="text-[#9fe4e5]">encontrado</span> antes de ser admirado.</h1>
+            <h1 className="mt-8 max-w-4xl font-display text-6xl font-semibold leading-[.9] tracking-[-.06em] sm:text-7xl lg:text-[7.6rem]">Sites e landing pages<br /><span className="text-[#9fe4e5]">que geram oportunidades.</span></h1>
             <p className="mt-9 max-w-xl text-base leading-8 text-slate-300 sm:text-lg">Criamos sites e landing pages que organizam a história da sua empresa, facilitam a descoberta e transformam intenção em conversa.</p>
             <a href="#encontrabilidade" data-testid="link-sites-hero-cta" className="mt-8 flex w-fit items-center gap-2 text-sm font-extrabold text-[#9fe4e5]">Ver o que uma presença precisa fazer <ArrowDownRight className="h-4 w-4" /></a>
           </div>
@@ -2419,8 +2419,8 @@ function SitesLandingPagesPage({ service }: { service: Service }) {
 function SocialContentPage({ service }: { service: Service }) {
   const [openBullet, setOpenBullet] = useState<number | null>(null);
   usePageMeta(
-    'Conteúdo Estratégico para Redes Sociais',
-    'Crie conteúdo estratégico para redes sociais com roteiro, direção, produção e distribuição alinhados aos objetivos da sua marca.',
+    'Conteúdo para Redes Sociais com Estratégia',
+    'Conteúdo para redes sociais com estratégia, roteiro e produção para atrair atenção, fortalecer sua marca e transformar presença digital em oportunidades.',
   );
   return (
     <div className="site-shell overflow-hidden">
@@ -2465,8 +2465,8 @@ function SocialContentPage({ service }: { service: Service }) {
 
 function CasesPage() {
   usePageMeta(
-    'Cases de Marketing e Crescimento',
-    'Conheça cases da VG Consultoria em Marketing e veja como estratégia, marca, processos e mídia ajudaram empresas a crescer.',
+    'Cases de Marketing e Branding em Fortaleza',
+    'Veja cases de marketing, branding, tráfego pago e estruturação comercial da VG. Projetos pensados para dar clareza, gerar oportunidades e apoiar o crescimento.',
   );
   return (
     <div className="site-shell art-directed overflow-hidden">
