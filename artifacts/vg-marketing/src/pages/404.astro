@@ -1,0 +1,36 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+---
+
+<SiteLayout
+  title="Página não encontrada"
+  description="A página que você procura não foi encontrada. Volte para a VG Consultoria em Marketing e conheça nossos serviços."
+  path="/404"
+  indexable={false}
+>
+  <main class="flex min-h-screen items-center justify-center bg-[#202f4d] px-5 py-20 text-white">
+    <div class="relative w-full max-w-2xl overflow-hidden rounded-[1.75rem] border border-white/15 bg-[#263758] p-8 shadow-2xl sm:p-12">
+      <div class="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full border border-[#9fe4e5]/20" />
+      <div class="pointer-events-none absolute -bottom-20 -left-16 h-48 w-48 rounded-full border border-[#c88982]/20" />
+      <div class="relative">
+        <p class="flex items-center gap-3 font-mono-vg text-[10px] uppercase tracking-[.22em] text-[#9fe4e5]">
+          <span class="h-2 w-2 rounded-full bg-[#9fe4e5]" /> 404 / rota não encontrada
+        </p>
+        <h1 class="mt-8 max-w-xl font-display text-5xl font-semibold leading-[.98] tracking-[-.05em] sm:text-7xl">
+          Essa página saiu do <span class="text-[#9fe4e5]">caminho.</span>
+        </h1>
+        <p class="mt-7 max-w-lg text-base leading-8 text-slate-300">
+          O endereço pode ter mudado ou não existir mais. A próxima conversa ainda está logo ali.
+        </p>
+        <div class="mt-9 flex flex-col gap-3 sm:flex-row">
+          <a href="/" class="button-lift rounded-lg bg-[#9fe4e5] px-5 py-3.5 text-center text-sm font-extrabold text-[#202f4d]">
+            Voltar para a Home
+          </a>
+          <a href="/?menu=servicos" class="rounded-lg border border-white/20 px-5 py-3.5 text-center text-sm font-bold text-white transition-colors hover:border-[#9fe4e5] hover:text-[#9fe4e5]">
+            Conhecer os serviços
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+</SiteLayout>

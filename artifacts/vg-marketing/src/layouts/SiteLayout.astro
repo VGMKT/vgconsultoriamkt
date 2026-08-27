@@ -11,7 +11,8 @@ interface Props {
 
 const { title, description, path, schema, indexable = true } = Astro.props;
 const fullTitle = `${title} | VG Marketing`;
-const canonical = `https://vgconsultoriamkt.com.br${path === '/' ? '/' : path}`;
+const canonicalPath = path === '/' ? '/' : `${path.replace(/\/+$/, '')}/`;
+const canonical = `https://vgconsultoriamkt.com.br${canonicalPath}`;
 const socialImage = 'https://vgconsultoriamkt.com.br/og-image.png';
 const structuredData = {
   '@context': 'https://schema.org',

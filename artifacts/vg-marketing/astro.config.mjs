@@ -9,6 +9,9 @@ export default defineConfig({
   integrations: [react()],
   vite: {
     plugins: [tailwindcss({ optimize: false })],
+    build: {
+      target: 'es2022',
+    },
     resolve: {
       alias: {
         '@': new URL('./src', import.meta.url).pathname,

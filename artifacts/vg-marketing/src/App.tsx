@@ -11,15 +11,6 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/components/not-found';
 import logoPath from '@assets/LOGO_VG_MARKETING_1787577364878.png';
-import loginLogoPath from '@assets/LOGO_VG_MARKETING_1787595132276.png';
-import latestLoginLogoPath from '@assets/LOGO_REDONDO_1787597368452.png';
-import crmLogoPath from '@assets/LOGO_REDONDO_1787599549491.png';
-import hfcoLogoPath from '@assets/LOGOQUADRADO_1787584190111.png';
-import imoveisLogoPath from '@assets/LOGO_1787590491272.jpg';
-import kartshopLogoPath from '@assets/logo_kartshop_upscayl_4x_upscayl-standard-4x_1787590622533.png';
-import nobreLogoPath from '@assets/logo_nobre_iphones_1787590660734.png';
-import profixLogoPath from '@assets/Logo_Profix_1787590753568.png';
-import santaRitaLogoPath from '@assets/LOGO500X500_1787590811257.png';
 
 const queryClient = new QueryClient();
 const SITE_URL = import.meta.env.VITE_SITE_URL || 'https://vgconsultoriamkt.com.br';
@@ -310,7 +301,7 @@ const CASE_STUDIES: CaseStudy[] = [
     summary: 'Posicionamento, presença e operação para uma marca que queria ganhar clareza.',
     detail: 'A VG Consultoria em Marketing tem orgulho em ter prestado serviços para a HF&CO Acabamentos. Um trabalho de consultoria que envolveu rebranding, lançamento de nova marca no mercado, estruturação da comunicação, internalização dos processos de marketing, seleção de pessoal, tráfego pago, lançamento de novo site, Manager As a Service e muito mais.',
     mark: 'HF',
-    logo: hfcoLogoPath,
+    logo: '/case-logos/hfco.jpg',
     tone: 'bg-[#d7bd91]',
     featured: true,
   },
@@ -320,7 +311,7 @@ const CASE_STUDIES: CaseStudy[] = [
     summary: 'Uma parceria para transformar marketing em processo comercial.',
     detail: 'A parceria da VG Consultoria em Marketing com a Imóveis Diferenciados foi fundamental em diversos momentos. Internalizamos processos de marketing contratando e treinando Social Media, Tráfego Pago, busca da melhor solução para site e migração de todo o sistema de gestão do portal.',
     mark: 'ID',
-    logo: imoveisLogoPath,
+    logo: '/case-logos/imoveis.jpg',
     tone: 'bg-[#b8d9da]',
   },
   {
@@ -329,7 +320,7 @@ const CASE_STUDIES: CaseStudy[] = [
     summary: 'Uma loja na web preparada para modernizar o jeito de vender.',
     detail: 'Trabalhar em conjunto com a Kartshop foi uma oportunidade incrível para modernizar uma tradicional loja de e-commerce para um sistema totalmente novo e moderno. Fizemos toda a migração de sistema, cadastro de produtos e clientes, do GTM até a primeira venda. Estruturamos a comunicação, inaugurando a gestão das redes sociais.',
     mark: 'KS',
-    logo: kartshopLogoPath,
+    logo: '/case-logos/kartshop.jpg',
     tone: 'bg-[#e6edf4]',
   },
   {
@@ -338,7 +329,7 @@ const CASE_STUDIES: CaseStudy[] = [
     summary: 'Diagnóstico, CRM e mídia para transformar interesse em venda.',
     detail: 'A VG Consultoria em Marketing teve a satisfação de colaborar com a Nobre Iphones, fazendo um diagnóstico da empresa e do mercado de celulares e serviços, construção de site, aplicação da estratégia de CRM com escolha do sistema e gestão de campanhas ponta-a-ponta, trazendo 150% de ROI, assim como a internalização dos processos de marketing, através da seleção, treinamento e execução do social media nas redes sociais.',
     mark: 'NI',
-    logo: nobreLogoPath,
+    logo: '/case-logos/nobre.jpg',
     tone: 'bg-[#202f4d]',
   },
   {
@@ -347,7 +338,7 @@ const CASE_STUDIES: CaseStudy[] = [
     summary: 'Uma marca nova, com nome, identidade e processo para crescer.',
     detail: 'A parceria com a Profix permitiu à VG Consultoria em Marketing desenvolver uma nova marca no mercado. Desde a criação do nome, logo, identidade visual. Fizemos a seleção de fornecedores para site e para social media, assim como a gestão de conteúdo da marca.',
     mark: 'PF',
-    logo: profixLogoPath,
+    logo: '/case-logos/profix.jpg',
     tone: 'bg-[#c88982]',
   },
   {
@@ -356,7 +347,7 @@ const CASE_STUDIES: CaseStudy[] = [
     summary: 'Marketing integrado para um negócio com história e presença local.',
     detail: 'A VG Consultoria em Marketing teve a oportunidade de trabalhar com a Santa Rita, no diagnóstico da empresa, análise de mercado e na criação da identidade completa da marca. Internalizamos processo de marketing na seleção de analista de marketing, participando desde as entrevistas, contratação e treinamento. Além disso produzimos vídeos sazonais para redes sociais, e atuamos como Marketing Manager-as-a-Service (MMaaS), na gestão da comunicação e nos conteúdos.',
     mark: 'SR',
-    logo: santaRitaLogoPath,
+    logo: '/case-logos/santa-rita.jpg',
     tone: 'bg-[#dce7f0]',
   },
 ];
@@ -443,7 +434,7 @@ function ServiceSeoBlock({ service }: { service: Service }) {
           <div className="mt-8 border-t border-[#d9e0e9] pt-5">
             <p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#58739f]">/ veja também</p>
             <nav aria-label="Serviços relacionados" className="mt-4 flex flex-col items-start gap-3">
-              {related.map((item) => <Link key={item.slug} href={`/servicos/${item.slug}`} className="text-sm font-extrabold text-[#202f4d] underline decoration-[#9fe4e5] decoration-2 underline-offset-4 hover:text-[#58739f]">{item.label} <ArrowRight className="ml-1 inline h-3.5 w-3.5" /></Link>)}
+              {related.map((item) => <Link key={item.slug} href={`/servicos/${item.slug}/`} className="text-sm font-extrabold text-[#202f4d] underline decoration-[#9fe4e5] decoration-2 underline-offset-4 hover:text-[#58739f]">{item.label} <ArrowRight className="ml-1 inline h-3.5 w-3.5" /></Link>)}
             </nav>
           </div>
         </div>
@@ -484,7 +475,8 @@ function usePageMeta(title: string, description: string) {
     const fullTitle = `${title} | VG Marketing`;
     document.title = fullTitle;
     const path = window.location.pathname.replace(/\/+$/, '') || '/';
-    const canonicalUrl = `${SITE_URL}${path === '/' ? '/' : path}`;
+    const canonicalPath = path === '/' ? '/' : `${path}/`;
+    const canonicalUrl = `${SITE_URL}${canonicalPath}`;
     const socialImageUrl = `${SITE_URL}/og-image.png`;
     upsertMeta('name', 'description', description);
     upsertMeta('name', 'author', SITE_NAME);
@@ -524,9 +516,9 @@ function Header({ onLight = false }: { onLight?: boolean }) {
   const [servicesOpen, setServicesOpen] = useState(false);
   const links = [
     { href: '/', label: 'Início' },
-    { href: '/servicos/consultoria-de-marketing', label: 'Como atuamos' },
-    { href: '/sobre-a-vg', label: 'Sobre a VG' },
-    { href: '/cases', label: 'Cases' },
+    { href: '/servicos/consultoria-de-marketing/', label: 'Como atuamos' },
+    { href: '/sobre-a-vg/', label: 'Sobre a VG' },
+    { href: '/cases/', label: 'Cases' },
   ];
   useEffect(() => {
     const openServicesMenu = () => {
@@ -558,7 +550,7 @@ function Header({ onLight = false }: { onLight?: boolean }) {
             {servicesOpen && (
               <div className="absolute right-0 top-full z-50 w-80 rounded-2xl border border-white/15 bg-[#202f4d]/95 p-2 shadow-2xl backdrop-blur-xl">
                 {SERVICES.map((service) => (
-                  <Link key={service.slug} href={`/servicos/${service.slug}`} onClick={() => setServicesOpen(false)} data-testid={`link-nav-service-${service.slug}`} className="block rounded-xl px-4 py-3 text-sm font-semibold text-slate-200 transition-colors hover:bg-[#9fe4e5] hover:text-[#202f4d]">
+                  <Link key={service.slug} href={`/servicos/${service.slug}/`} onClick={() => setServicesOpen(false)} data-testid={`link-nav-service-${service.slug}`} className="block rounded-xl px-4 py-3 text-sm font-semibold text-slate-200 transition-colors hover:bg-[#9fe4e5] hover:text-[#202f4d]">
                     {service.label}
                   </Link>
                 ))}
@@ -567,7 +559,7 @@ function Header({ onLight = false }: { onLight?: boolean }) {
           </div>
         </nav>
          <div className="hidden items-center gap-3 md:flex">
-         <Link href="/sign-in" data-testid="link-header-company-access" className={`rounded-full border px-4 py-3 text-[12px] font-extrabold transition-colors ${onLight ? 'border-[#202f4d]/35 text-[#202f4d] hover:bg-[#202f4d] hover:text-white' : 'border-[#9fe4e5]/50 text-[#9fe4e5] hover:bg-[#9fe4e5] hover:text-[#202f4d]'}`}>
+         <Link href="/sign-in/" data-testid="link-header-company-access" className={`rounded-full border px-4 py-3 text-[12px] font-extrabold transition-colors ${onLight ? 'border-[#202f4d]/35 text-[#202f4d] hover:bg-[#202f4d] hover:text-white' : 'border-[#9fe4e5]/50 text-[#9fe4e5] hover:bg-[#9fe4e5] hover:text-[#202f4d]'}`}>
            Acesso empresa
          </Link>
          <Link href="/#contato" data-testid="link-header-contact" className="button-lift rounded-full bg-[#9fe4e5] px-5 py-3 text-[12px] font-extrabold text-[#202f4d]">
@@ -592,17 +584,17 @@ function Header({ onLight = false }: { onLight?: boolean }) {
             {servicesOpen && (
               <div className="mb-3 rounded-xl bg-white/5 p-2">
                 {SERVICES.map((service) => (
-                  <Link key={service.slug} href={`/servicos/${service.slug}`} onClick={() => { setOpen(false); setServicesOpen(false); }} data-testid={`link-mobile-service-${service.slug}`} className={`block rounded-lg px-3 py-2.5 text-xs font-semibold hover:bg-[#9fe4e5] hover:text-[#202f4d] ${onLight ? 'text-[#202f4d]' : 'text-slate-300'}`}>
+                  <Link key={service.slug} href={`/servicos/${service.slug}/`} onClick={() => { setOpen(false); setServicesOpen(false); }} data-testid={`link-mobile-service-${service.slug}`} className={`block rounded-lg px-3 py-2.5 text-xs font-semibold hover:bg-[#9fe4e5] hover:text-[#202f4d] ${onLight ? 'text-[#202f4d]' : 'text-slate-300'}`}>
                     {service.label}
                   </Link>
                 ))}
               </div>
             )}
           </div>
-          <Link href="/sobre-a-vg" onClick={() => setOpen(false)} data-testid="link-mobile-about" className="block border-b border-white/10 px-3 py-3.5 text-sm font-semibold text-slate-200">Sobre a VG</Link>
-          <Link href="/cases" onClick={() => setOpen(false)} data-testid="link-mobile-cases" className="block border-b border-white/10 px-3 py-3.5 text-sm font-semibold text-slate-200">Cases</Link>
+          <Link href="/sobre-a-vg/" onClick={() => setOpen(false)} data-testid="link-mobile-about" className="block border-b border-white/10 px-3 py-3.5 text-sm font-semibold text-slate-200">Sobre a VG</Link>
+          <Link href="/cases/" onClick={() => setOpen(false)} data-testid="link-mobile-cases" className="block border-b border-white/10 px-3 py-3.5 text-sm font-semibold text-slate-200">Cases</Link>
           <Link href="/#contato" onClick={() => setOpen(false)} data-testid="link-mobile-contact" className="mt-3 block rounded-xl bg-[#9fe4e5] px-3 py-3 text-center text-sm font-extrabold text-[#202f4d]">Solicite um orçamento</Link>
-          <Link href="/sign-in" onClick={() => setOpen(false)} data-testid="link-mobile-company-access" className="mt-2 block rounded-xl border border-[#9fe4e5]/50 px-3 py-3 text-center text-sm font-extrabold text-[#9fe4e5]">Acesso empresa</Link>
+          <Link href="/sign-in/" onClick={() => setOpen(false)} data-testid="link-mobile-company-access" className="mt-2 block rounded-xl border border-[#9fe4e5]/50 px-3 py-3 text-center text-sm font-extrabold text-[#9fe4e5]">Acesso empresa</Link>
         </div>
       )}
     </header>
@@ -611,7 +603,7 @@ function Header({ onLight = false }: { onLight?: boolean }) {
 
 function Footer() {
   const [location] = useLocation();
-  const service = SERVICES.find((item) => location === `/servicos/${item.slug}`);
+  const service = SERVICES.find((item) => location.replace(/\/+$/, '') === `/servicos/${item.slug}`);
   return (
     <>
       {service && <ServiceSeoBlock service={service} />}
@@ -641,8 +633,8 @@ function Footer() {
             >
               Serviços
             </Link>
-            <Link href="/sobre-a-vg" data-testid="link-footer-about" className="underline-link hover:text-white">Sobre a VG</Link>
-            <Link href="/cases" data-testid="link-footer-cases" className="underline-link hover:text-white">Cases</Link>
+            <Link href="/sobre-a-vg/" data-testid="link-footer-about" className="underline-link hover:text-white">Sobre a VG</Link>
+            <Link href="/cases/" data-testid="link-footer-cases" className="underline-link hover:text-white">Cases</Link>
             <Link href="/#contato" data-testid="link-footer-contact" className="underline-link hover:text-white">Solicite um orçamento</Link>
           </div>
         </div>
@@ -1134,7 +1126,7 @@ function SignInPage() {
       <div className="w-full max-w-[390px]">
         <div className="relative mx-auto w-full max-w-[360px] pt-16">
           <Link href="/" className="absolute left-1/2 top-0 z-10 flex h-28 w-28 -translate-x-1/2 items-center justify-center overflow-hidden rounded-full border-[0.25px] border-white bg-white p-0.5 shadow-[0_12px_28px_rgba(0,0,0,.3)]" data-testid="link-login-logo">
-            <img src={assetUrl(latestLoginLogoPath)} alt="Logo VG" width="112" height="112" className="h-full w-full object-contain" />
+            <img src={assetUrl(logoPath)} alt="Logo VG" width="112" height="112" className="h-full w-full object-contain" />
           </Link>
           <form onSubmit={submit} className="flex aspect-square flex-col justify-start rounded-full bg-[#f5f7fa] px-8 pb-8 pt-20 shadow-[0_20px_60px_rgba(0,0,0,.2)] ring-1 ring-white/35 ring-offset-8 ring-offset-[#061a36] sm:px-10">
           <div className="mb-4 text-center">
@@ -1433,7 +1425,7 @@ function AdminPage() {
        <header className="sticky top-0 z-30 bg-[#061a36]/95 text-white shadow-[0_10px_35px_rgba(6,26,54,.16)] backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 lg:px-10">
           <Link href="/admin" className="flex items-center gap-3" data-testid="link-crm-brand">
-            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white p-0.5 shadow-[0_0_0_1px_rgba(255,255,255,.25)]"><img src={assetUrl(crmLogoPath)} alt="Logo VG" width="44" height="44" className="h-full w-full rounded-full object-contain" /></span>
+            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white p-0.5 shadow-[0_0_0_1px_rgba(255,255,255,.25)]"><img src={assetUrl(logoPath)} alt="Logo VG" width="44" height="44" className="h-full w-full rounded-full object-contain" /></span>
             <div><p className="font-display text-lg font-bold tracking-[-.02em]">CRM de Marketing</p></div>
           </Link>
           <div className="flex items-center gap-3">
@@ -1529,7 +1521,7 @@ function AdminPage() {
 function ProtectedAdmin() {
   const { isLoaded, isSignedIn } = useAuth();
   if (!isLoaded) return <div className="flex min-h-[100dvh] items-center justify-center bg-[#071c2a] text-sm text-slate-300">Carregando acesso...</div>;
-  if (!isSignedIn) return <Redirect to="/sign-in" />;
+  if (!isSignedIn) return <Redirect to="/sign-in/" />;
   return <AdminPage />;
 }
 
@@ -2620,7 +2612,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/sign-in/*?" component={SignInPage} />
-        <Route path="/login" component={() => <Redirect to="/sign-in" />} />
+        <Route path="/login" component={() => <Redirect to="/sign-in/" />} />
         <Route path="/admin" component={ProtectedAdmin} />
         <Route path="/sobre-a-vg" component={AboutPage} />
         <Route path="/cases" component={CasesPage} />

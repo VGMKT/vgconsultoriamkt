@@ -19,9 +19,6 @@ build = [ "pnpm", "--filter", "@workspace/vg-marketing", "run", "build" ]
 serve = "static"
 publicDir = "artifacts/vg-marketing/dist/public"
 
-[[services.production.rewrites]]
-from = "/*"
-to = "/index.html"
 
 [services.env]
 PORT = "25646"
