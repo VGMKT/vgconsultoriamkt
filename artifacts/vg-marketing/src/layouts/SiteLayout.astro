@@ -18,8 +18,8 @@ const structuredData = {
   '@context': 'https://schema.org',
   '@graph': [
     {
-      '@type': 'LocalBusiness',
-      '@id': 'https://vgconsultoriamkt.com.br/#business',
+      '@type': 'Organization',
+      '@id': 'https://vgconsultoriamkt.com.br/#organization',
       name: 'VG Consultoria em Marketing',
       url: 'https://vgconsultoriamkt.com.br/',
       logo: socialImage,
@@ -30,14 +30,23 @@ const structuredData = {
         { '@type': 'AdministrativeArea', name: 'Ceará' },
         { '@type': 'Country', name: 'Brasil' },
       ],
-      priceRange: '$$',
+      sameAs: [
+        'https://www.instagram.com/vgconsultoriamkt/',
+        'https://www.linkedin.com/company/vg-consultoria-em-marketing/',
+      ],
+      contactPoint: {
+        '@type': 'ContactPoint',
+        contactType: 'customer service',
+        email: 'atendimento@vgconsultoriamkt.com.br',
+        availableLanguage: ['pt-BR'],
+      },
     },
     {
       '@type': 'WebSite',
       '@id': 'https://vgconsultoriamkt.com.br/#website',
       url: 'https://vgconsultoriamkt.com.br/',
       name: 'VG Consultoria em Marketing',
-      publisher: { '@id': 'https://vgconsultoriamkt.com.br/#business' },
+      publisher: { '@id': 'https://vgconsultoriamkt.com.br/#organization' },
       inLanguage: 'pt-BR',
     },
     ...(schema ? [schema] : []),
