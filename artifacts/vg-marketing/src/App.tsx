@@ -2590,6 +2590,7 @@ function Router() {
         <Route path="/sign-in/*?" component={SignInPage} />
         <Route path="/login" component={() => <Redirect to="/sign-in/" />} />
         <Route path="/admin" component={ProtectedAdmin} />
+        <Route path="/admin/" component={ProtectedAdmin} />
         <Route path="/sobre-a-vg" component={AboutPage} />
         <Route path="/cases" component={CasesPage} />
         {SERVICES.map((service) => <Route key={service.slug} path={`/servicos/${service.slug}`}>{service.slug === 'trafego-pago' ? <PaidTrafficPage service={service} /> : service.slug === 'consultoria-de-marketing' ? <MarketingConsultingPage service={service} /> : service.slug === 'internalizacao-de-marketing' ? <InternalizationPage service={service} /> : service.slug === 'manager-as-a-service' ? <ManagerAsServicePage service={service} /> : service.slug === 'branding' ? <BrandingPage service={service} /> : service.slug === 'sites-landing-pages' ? <SitesLandingPagesPage service={service} /> : service.slug === 'conteudo-para-redes-sociais' ? <SocialContentPage service={service} /> : <ServicePage service={service} />}</Route>)}
