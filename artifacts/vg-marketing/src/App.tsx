@@ -559,9 +559,9 @@ function Header({ onLight = false }: { onLight?: boolean }) {
           </div>
         </nav>
          <div className="hidden items-center gap-3 md:flex">
-         <Link href="/sign-in/" data-testid="link-header-company-access" className={`rounded-full border px-4 py-3 text-[12px] font-extrabold transition-colors ${onLight ? 'border-[#202f4d]/35 text-[#202f4d] hover:bg-[#202f4d] hover:text-white' : 'border-[#9fe4e5]/50 text-[#9fe4e5] hover:bg-[#9fe4e5] hover:text-[#202f4d]'}`}>
+         <a href="/sign-in/" data-testid="link-header-company-access" className={`rounded-full border px-4 py-3 text-[12px] font-extrabold transition-colors ${onLight ? 'border-[#202f4d]/35 text-[#202f4d] hover:bg-[#202f4d] hover:text-white' : 'border-[#9fe4e5]/50 text-[#9fe4e5] hover:bg-[#9fe4e5] hover:text-[#202f4d]'}`}>
            Acesso empresa
-         </Link>
+         </a>
          <Link href="/#contato" data-testid="link-header-contact" className="button-lift rounded-full bg-[#9fe4e5] px-5 py-3 text-[12px] font-extrabold text-[#202f4d]">
           Vamos conversar <ArrowRight className="ml-2 inline-block h-3.5 w-3.5" />
         </Link>
@@ -594,7 +594,7 @@ function Header({ onLight = false }: { onLight?: boolean }) {
           <Link href="/sobre-a-vg/" onClick={() => setOpen(false)} data-testid="link-mobile-about" className="block border-b border-white/10 px-3 py-3.5 text-sm font-semibold text-slate-200">Sobre a VG</Link>
           <Link href="/cases/" onClick={() => setOpen(false)} data-testid="link-mobile-cases" className="block border-b border-white/10 px-3 py-3.5 text-sm font-semibold text-slate-200">Cases</Link>
           <Link href="/#contato" onClick={() => setOpen(false)} data-testid="link-mobile-contact" className="mt-3 block rounded-xl bg-[#9fe4e5] px-3 py-3 text-center text-sm font-extrabold text-[#202f4d]">Solicite um orçamento</Link>
-          <Link href="/sign-in/" onClick={() => setOpen(false)} data-testid="link-mobile-company-access" className="mt-2 block rounded-xl border border-[#9fe4e5]/50 px-3 py-3 text-center text-sm font-extrabold text-[#9fe4e5]">Acesso empresa</Link>
+          <a href="/sign-in/" onClick={() => setOpen(false)} data-testid="link-mobile-company-access" className="mt-2 block rounded-xl border border-[#9fe4e5]/50 px-3 py-3 text-center text-sm font-extrabold text-[#9fe4e5]">Acesso empresa</a>
         </div>
       )}
     </header>
@@ -2590,7 +2590,6 @@ function Router() {
         <Route path="/sign-in/*?" component={SignInPage} />
         <Route path="/login" component={() => <Redirect to="/sign-in/" />} />
         <Route path="/admin" component={ProtectedAdmin} />
-        <Route path="/admin/" component={ProtectedAdmin} />
         <Route path="/sobre-a-vg" component={AboutPage} />
         <Route path="/cases" component={CasesPage} />
         {SERVICES.map((service) => <Route key={service.slug} path={`/servicos/${service.slug}`}>{service.slug === 'trafego-pago' ? <PaidTrafficPage service={service} /> : service.slug === 'consultoria-de-marketing' ? <MarketingConsultingPage service={service} /> : service.slug === 'internalizacao-de-marketing' ? <InternalizationPage service={service} /> : service.slug === 'manager-as-a-service' ? <ManagerAsServicePage service={service} /> : service.slug === 'branding' ? <BrandingPage service={service} /> : service.slug === 'sites-landing-pages' ? <SitesLandingPagesPage service={service} /> : service.slug === 'conteudo-para-redes-sociais' ? <SocialContentPage service={service} /> : <ServicePage service={service} />}</Route>)}
