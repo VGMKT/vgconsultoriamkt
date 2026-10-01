@@ -268,7 +268,7 @@ const SERVICES: Service[] = [
 const serviceBySlug = (slug: string) => SERVICES.find((service) => service.slug === slug) ?? SERVICES[0];
 
 const HOME_NEEDS = [
-  { index: '01', kicker: 'Aquisição & escala', title: 'Quero vender mais pela internet', text: 'Organizamos aquisição, mídia e conversão para transformar atenção em oportunidades mais qualificadas.', detail: 'Do clique ao fechamento da venda, com estratégia, time preparado e processo claro.', tone: 'bg-[#c88982]', textTone: 'text-[#202f4d]' },
+  { index: '01', kicker: 'Aquisição & escala', title: 'Performance Digital para gerar oportunidades e vendas', text: 'Mais do que gerenciar anúncios, analisamos a jornada entre investimento, geração de oportunidades e vendas para identificar gargalos e melhorar a performance da operação digital.', detail: 'Tráfego Pago + Consultoria de Performance para empresas que querem melhorar a aquisição digital com uma visão além dos anúncios.', tone: 'bg-[#c88982]', textTone: 'text-[#202f4d]' },
   { index: '02', kicker: 'Time & autonomia', title: 'Quero estruturar minha própria equipe de marketing', text: 'Montamos a base para sua empresa ter pessoas, processos e rotina próprios de marketing.', detail: 'Um time próprio, com as pessoas certas nos lugares certos.', tone: 'bg-[#d7bd91]', textTone: 'text-[#202f4d]' },
   { index: '03', kicker: 'Capacitação', title: 'Quero treinar e capacitar meu time atual', text: 'Damos direção prática para o time executar com mais critério, autonomia e consistência.', detail: 'Contexto antes de canal. Critério antes de velocidade.', tone: 'bg-[#9fd6d7]', textTone: 'text-[#202f4d]' },
   { index: '04', kicker: 'Liderança sob demanda', title: 'Quero um marketing gerenciado pela VG', text: 'Assumimos a liderança estratégica e a cadência do marketing como uma extensão do seu negócio.', detail: 'Uma liderança para conectar estratégia, equipe, parceiros e resultado.', tone: 'bg-[#202f4d]', textTone: 'text-white' },
@@ -1858,7 +1858,7 @@ function PaidTrafficPage({ service }: { service: Service }) {
               Tráfego pago que não termina no <span className="text-[#9fe4e5]">clique.</span>
             </h1>
             <p className="mt-8 max-w-xl text-base leading-8 text-slate-300 sm:text-lg">
-              A VG conecta campanhas, canais de aquisição, atendimento comercial, scripts, CRM e mensuração para transformar mídia paga em vendas.
+              Na VG, a gestão de tráfego vai além da configuração e otimização de campanhas. Analisamos a mídia dentro da jornada de aquisição, considerando a qualidade das oportunidades geradas e os pontos de conversão que influenciam o resultado. Quando necessário, avaliamos fatores como oferta, páginas, atendimento e processo comercial.
             </p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
               <a href="#contato" data-testid="link-paid-hero-cta" className="button-lift flex w-fit items-center gap-2 rounded-lg bg-[#9fe4e5] px-5 py-3.5 text-sm font-extrabold text-[#202f4d]">
@@ -1949,6 +1949,7 @@ function PaidTrafficPage({ service }: { service: Service }) {
             <p className="mb-4 font-mono-vg text-[10px] uppercase tracking-[.2em] text-[#58739f]">/ o que está incluso</p>
             <h2 className="max-w-md font-display text-4xl font-semibold leading-[1.04] tracking-[-.04em] text-[#202f4d] sm:text-5xl">Estrutura para o tráfego <span className="text-[#58739f]">trabalhar melhor.</span></h2>
             <p className="mt-7 max-w-sm text-base leading-8 text-[#56657d]">Cada frente existe para aproximar a atração da conversão — com clareza sobre o papel do marketing e do comercial.</p>
+            <p className="mt-4 max-w-sm text-sm leading-7 text-[#56657d]">A consultoria avalia, conforme o contexto e os dados disponíveis, campanhas, públicos, criativos, oferta, páginas, geração de leads, atendimento e conversão, além de métricas como CPL, CAC e ROAS.</p>
             <a href="#contato" data-testid="link-paid-includes-cta" className="mt-8 flex w-fit items-center gap-2 text-sm font-extrabold text-[#202f4d] underline decoration-[#9fe4e5] decoration-2 underline-offset-8 transition-colors hover:text-[#58739f]">Conversar sobre meu cenário <ArrowRight className="h-4 w-4" /></a>
           </div>
           <div className="grid gap-0 border-t border-[#b8c6d7]">
@@ -2011,10 +2012,10 @@ function PaidTrafficPage({ service }: { service: Service }) {
         <div className="mx-auto grid max-w-7xl gap-10 px-5 py-16 lg:grid-cols-[1.1fr_.9fr] lg:items-end lg:px-10 lg:py-24">
           <div>
             <p className="font-mono-vg text-[10px] uppercase tracking-[.2em] text-[#9fe4e5]">/ por que a VG</p>
-            <h2 className="mt-5 max-w-3xl font-display text-4xl font-semibold leading-[1.03] tracking-[-.04em] sm:text-6xl">Não gerenciamos anúncios isolados. <span className="text-[#9fe4e5]">Conectamos a operação.</span></h2>
+            <h2 className="mt-5 max-w-3xl font-display text-4xl font-semibold leading-[1.03] tracking-[-.04em] sm:text-6xl">Nem todo problema de performance está dentro da plataforma de anúncios.</h2>
           </div>
           <div className="border-t border-white/15 pt-6 lg:justify-self-end lg:max-w-sm">
-            <p className="text-base leading-8 text-slate-300">A diferença está em olhar para o que acontece antes e depois do clique: o caminho completo do lead, o papel do time e os sinais que ajudam a decidir.</p>
+            <p className="text-base leading-8 text-slate-300">Uma campanha pode gerar cliques e leads e ainda assim não gerar o resultado esperado. Por isso, a análise da VG vai além de Meta Ads e Google Ads para identificar gargalos na jornada entre o anúncio e a venda.</p>
             <a href="#contato" data-testid="link-paid-differentiator-cta" className="mt-7 flex w-fit items-center gap-2 rounded-lg bg-[#9fe4e5] px-5 py-3.5 text-sm font-extrabold text-[#202f4d] transition-transform hover:-translate-y-0.5">Falar com a VG <ArrowRight className="h-4 w-4" /></a>
           </div>
         </div>
