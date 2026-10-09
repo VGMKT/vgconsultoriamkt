@@ -10,6 +10,10 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: services
+    description: CRM service catalog operations
+  - name: leadServices
+    description: Services linked to CRM leads
 paths:
   /healthz:
     get:
@@ -24,6 +28,203 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /services:
+    get:
+      operationId: listServices
+      tags: [services]
+      summary: List active CRM services
+      responses:
+        "200":
+          description: Active services
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceList"
+        "401":
+          description: Authentication required
+    post:
+      operationId: createService
+      tags: [services]
+      summary: Add a service to the CRM catalog
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceWrite"
+      responses:
+        "201":
+          description: Service created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceResponse"
+        "400":
+          description: Invalid service fields
+        "401":
+          description: Authentication required
+        "403":
+          description: Insufficient permissions
+        "409":
+          description: A service with this name already exists
+  /services/{serviceId}:
+    parameters:
+      - name: serviceId
+        in: path
+        required: true
+        schema:
+          type: number
+          minimum: 1
+          multipleOf: 1
+    patch:
+      operationId: updateService
+      tags: [services]
+      summary: Update a CRM service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceWrite"
+      responses:
+        "200":
+          description: Service updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceResponse"
+        "400":
+          description: Invalid service fields
+        "401":
+          description: Authentication required
+        "403":
+          description: Insufficient permissions
+        "404":
+          description: Service not found
+        "409":
+          description: A service with this name already exists
+    delete:
+      operationId: deleteService
+      tags: [services]
+      summary: Remove a service from the active catalog
+      responses:
+        "204":
+          description: Service removed; existing records are preserved
+        "401":
+          description: Authentication required
+        "403":
+          description: Insufficient permissions
+        "404":
+          description: Service not found
+  /leads/{leadId}/services:
+    parameters:
+      - name: leadId
+        in: path
+        required: true
+        schema:
+          type: number
+          minimum: 1
+          multipleOf: 1
+    get:
+      operationId: listLeadServices
+      tags: [leadServices]
+      summary: List services linked to a lead
+      responses:
+        "200":
+          description: Linked services
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeadServiceList"
+        "401":
+          description: Authentication required
+        "403":
+          description: The user cannot access this lead
+        "404":
+          description: Lead not found
+    post:
+      operationId: createLeadService
+      tags: [leadServices]
+      summary: Link a catalog service to a lead
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LeadServiceWrite"
+      responses:
+        "201":
+          description: Service linked using the current catalog price and billing type
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeadServiceResponse"
+        "400":
+          description: Invalid service selection
+        "401":
+          description: Authentication required
+        "403":
+          description: The user cannot access this lead
+        "404":
+          description: Lead or active catalog service not found
+        "409":
+          description: The service is already linked to this lead
+  /leads/{leadId}/services/{leadServiceId}:
+    parameters:
+      - name: leadId
+        in: path
+        required: true
+        schema:
+          type: number
+          minimum: 1
+          multipleOf: 1
+      - name: leadServiceId
+        in: path
+        required: true
+        schema:
+          type: number
+          minimum: 1
+          multipleOf: 1
+    patch:
+      operationId: updateLeadService
+      tags: [leadServices]
+      summary: Edit a linked service's lead-specific price or billing type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LeadServiceUpdate"
+      responses:
+        "200":
+          description: Lead service updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeadServiceResponse"
+        "400":
+          description: Invalid price or billing type
+        "401":
+          description: Authentication required
+        "403":
+          description: The user cannot access this lead
+        "404":
+          description: Linked service not found
+    delete:
+      operationId: deleteLeadService
+      tags: [leadServices]
+      summary: Remove a service from a lead without deleting its history
+      responses:
+        "204":
+          description: Service unlinked and history preserved
+        "400":
+          description: Invalid lead or service ID
+        "401":
+          description: Authentication required
+        "403":
+          description: The user cannot access this lead
+        "404":
+          description: Linked service not found
 components:
   schemas:
     HealthStatus:
@@ -33,4 +234,129 @@ components:
           type: string
       required:
         - status
+    Service:
+      type: object
+      properties:
+        id:
+          type: number
+          minimum: 1
+          multipleOf: 1
+        name:
+          type: string
+        description:
+          type: string
+        scope:
+          type: string
+        basePrice:
+          type: number
+          nullable: true
+        billingType:
+          type: string
+          enum: [recurring, one_time]
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, name, description, scope, basePrice, billingType, createdAt, updatedAt]
+    ServiceList:
+      type: object
+      properties:
+        services:
+          type: array
+          items:
+            $ref: "#/components/schemas/Service"
+      required: [services]
+    ServiceResponse:
+      type: object
+      properties:
+        service:
+          $ref: "#/components/schemas/Service"
+      required: [service]
+    ServiceWrite:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 180
+        description:
+          type: string
+          maxLength: 5000
+        scope:
+          type: string
+          maxLength: 10000
+        basePrice:
+          type: number
+          minimum: 0
+          nullable: true
+        billingType:
+          type: string
+          enum: [recurring, one_time]
+          nullable: true
+      required: [name]
+    LeadService:
+      type: object
+      properties:
+        id:
+          type: number
+          minimum: 1
+          multipleOf: 1
+        serviceId:
+          type: number
+          minimum: 1
+          multipleOf: 1
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          nullable: true
+        billingType:
+          type: string
+          enum: [recurring, one_time]
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, serviceId, name, description, price, billingType, createdAt, updatedAt]
+    LeadServiceList:
+      type: object
+      properties:
+        services:
+          type: array
+          items:
+            $ref: "#/components/schemas/LeadService"
+      required: [services]
+    LeadServiceResponse:
+      type: object
+      properties:
+        leadService:
+          $ref: "#/components/schemas/LeadService"
+      required: [leadService]
+    LeadServiceWrite:
+      type: object
+      properties:
+        serviceId:
+          type: number
+          minimum: 1
+          multipleOf: 1
+      required: [serviceId]
+    LeadServiceUpdate:
+      type: object
+      properties:
+        price:
+          type: number
+          minimum: 0
+          nullable: true
+        billingType:
+          type: string
+          enum: [recurring, one_time]
+          nullable: true
 

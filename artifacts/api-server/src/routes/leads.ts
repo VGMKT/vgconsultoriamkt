@@ -1,7 +1,7 @@
 import { Router, type IRouter } from 'express';
-import { and, desc, eq, gte, ilike, isNull, lt, or, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, ilike, inArray, isNull, lt, or, sql } from 'drizzle-orm';
 import { db } from '@workspace/db';
-import { crmUsersTable, leadActivitiesTable, leadNotesTable, leadsTable, leadSources, leadStatuses, manualLeadSources, type LeadSource, type LeadStatus } from '@workspace/db/schema';
+import { crmUsersTable, leadActivitiesTable, leadNotesTable, leadServicesTable, leadsTable, leadSources, leadStatuses, manualLeadSources, type LeadSource, type LeadStatus } from '@workspace/db/schema';
 import { requireCrmUser, requireRole, type AuthenticatedRequest } from '../middleware/require-auth';
 import { logger } from '../lib/logger';
 import { z } from 'zod';
@@ -241,7 +241,21 @@ router.get('/leads', async (req: AuthenticatedRequest, res, next) => {
       .orderBy(desc(leadsTable.createdAt))
       .limit(limit)
       .offset((page - 1) * limit);
-    res.json({ leads, page, limit });
+    const serviceRows = leads.length
+      ? await db.select({ leadId: leadServicesTable.leadId, serviceName: leadServicesTable.serviceName })
+        .from(leadServicesTable)
+        .where(and(inArray(leadServicesTable.leadId, leads.map((lead) => lead.id)), isNull(leadServicesTable.removedAt)))
+        .orderBy(desc(leadServicesTable.createdAt))
+      : [];
+    const serviceNamesByLeadId = new Map<number, string[]>();
+    for (const row of serviceRows) {
+      serviceNamesByLeadId.set(row.leadId, [...(serviceNamesByLeadId.get(row.leadId) ?? []), row.serviceName]);
+    }
+    res.json({
+      leads: leads.map((lead) => ({ ...lead, serviceNames: serviceNamesByLeadId.get(lead.id) ?? [] })),
+      page,
+      limit,
+    });
   } catch (error) {
     next(error);
   }
@@ -347,11 +361,14 @@ router.get('/leads/:id', async (req, res, next) => {
       res.status(404).json({ error: 'Lead não encontrado.' });
       return;
     }
-    const [notes, activities] = await Promise.all([
+    const [notes, activities, linkedServices] = await Promise.all([
       db.select().from(leadNotesTable).where(eq(leadNotesTable.leadId, id)).orderBy(desc(leadNotesTable.createdAt)),
       db.select().from(leadActivitiesTable).where(eq(leadActivitiesTable.leadId, id)).orderBy(desc(leadActivitiesTable.createdAt)),
+      db.select({ serviceName: leadServicesTable.serviceName }).from(leadServicesTable)
+        .where(and(eq(leadServicesTable.leadId, id), isNull(leadServicesTable.removedAt)))
+        .orderBy(desc(leadServicesTable.createdAt)),
     ]);
-    res.json({ lead, notes, activities });
+    res.json({ lead: { ...lead, serviceNames: linkedServices.map((service) => service.serviceName) }, notes, activities });
   } catch (error) {
     next(error);
   }

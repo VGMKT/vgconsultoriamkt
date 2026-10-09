@@ -1,7 +1,7 @@
-import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
-import { ArrowDownRight, ArrowLeft, ArrowRight, BarChart3, Check, ChevronDown, CircleCheck, Compass, Crosshair, Instagram, Linkedin, Menu, MoveUpRight, Play, Plus, Quote, Search, Shield, Sparkles, Target, Trash2, UserCog, X, Zap } from 'lucide-react';
+import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react';
+import { ArrowDownRight, ArrowLeft, ArrowRight, AlertCircle, BarChart3, Check, ChevronDown, CircleCheck, Compass, Crosshair, FileText, Instagram, Linkedin, Menu, MoveUpRight, Pencil, Play, Plus, Quote, Search, Shield, Sparkles, Target, Trash2, UserCog, X, Zap } from 'lucide-react';
 import { Link, Redirect, Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { ClerkProvider, useAuth, useClerk, useUser } from '@clerk/react';
 import { useSignIn, useSignUp } from '@clerk/react/legacy';
 import { publishableKeyFromHost } from '@clerk/react/internal';
@@ -10,6 +10,10 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/components/not-found';
+import { ServiceCatalogManager } from '@/components/ServiceCatalogManager';
+import { ProposalGenerator } from '@/components/ProposalGenerator';
+import { getListLeadServicesQueryKey, getListServicesQueryKey, setAuthTokenGetter, setBaseUrl, useCreateLeadService, useDeleteLeadService, useListLeadServices, useListServices, useUpdateLeadService } from '@workspace/api-client-react';
+import type { LeadService } from '@workspace/api-client-react';
 import logoPath from '@assets/LOGO_VG_MARKETING_1787577364878.png';
 
 const queryClient = new QueryClient();
@@ -909,6 +913,7 @@ type CrmLead = {
   whatsapp: string;
   company: string | null;
   service: string | null;
+  serviceNames?: string[];
   objective: string | null;
   marketingBudget: string | null;
   message: string | null;
@@ -957,6 +962,185 @@ const CRM_STATUS_LABELS: Record<string, string> = {
   won: 'Ganho',
   lost: 'Perdido',
 };
+
+type LeadServiceBilling = 'recurring' | 'one_time';
+const moneyBRL = (value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+const billingText = (value: LeadServiceBilling | null) => value === 'recurring' ? 'Recorrente' : value === 'one_time' ? 'Pontual' : 'A definir';
+
+function LeadServicesPanel({ leadId, legacyService, onNamesChange }: { leadId: number; legacyService: string | null; onNamesChange: (names: string) => void }) {
+  const queryClient = useQueryClient();
+  const leadServicesQuery = useListLeadServices(leadId, { query: { enabled: !!leadId, queryKey: getListLeadServicesQueryKey(leadId) } });
+  const catalogQuery = useListServices({ query: { queryKey: getListServicesQueryKey() } });
+  const createLeadService = useCreateLeadService();
+  const updateLeadService = useUpdateLeadService();
+  const deleteLeadService = useDeleteLeadService();
+  const [serviceChoice, setServiceChoice] = useState('');
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editPrice, setEditPrice] = useState('');
+  const [editBilling, setEditBilling] = useState<LeadServiceBilling | ''>('');
+  const [removeTarget, setRemoveTarget] = useState<LeadService | null>(null);
+  const [actionError, setActionError] = useState('');
+  const [notice, setNotice] = useState('');
+  const onNamesChangeRef = useRef(onNamesChange);
+  onNamesChangeRef.current = onNamesChange;
+
+  const leadServices = leadServicesQuery.data?.services ?? [];
+  const catalogServices = catalogQuery.data?.services ?? [];
+  const linkedNames = leadServices.map((item) => item.name).filter(Boolean).join(', ');
+  const duplicateChoice = !!serviceChoice && leadServices.some((item) => item.serviceId === Number(serviceChoice));
+
+  useEffect(() => {
+    onNamesChangeRef.current(linkedNames || (legacyService ? serviceBySlug(legacyService)?.label || legacyService : ''));
+  }, [linkedNames, legacyService]);
+
+  const refreshLinks = () => queryClient.invalidateQueries({ queryKey: getListLeadServicesQueryKey(leadId) });
+  const refreshCatalog = () => queryClient.invalidateQueries({ queryKey: getListServicesQueryKey() });
+  const addService = () => {
+    if (!serviceChoice || duplicateChoice) return;
+    setActionError('');
+    setNotice('');
+    createLeadService.mutate({ leadId, data: { serviceId: Number(serviceChoice) } }, {
+      onSuccess: () => {
+        setServiceChoice('');
+        setNotice('Serviço adicionado à oferta deste lead.');
+        void Promise.all([refreshLinks(), refreshCatalog()]);
+      },
+      onError: () => setActionError('Não foi possível adicionar o serviço. Tente novamente.'),
+    });
+  };
+  const startEdit = (item: LeadService) => {
+    setEditingId(item.id);
+    setEditPrice(item.price === null ? '' : String(item.price));
+    setEditBilling(item.billingType ?? '');
+    setActionError('');
+    setNotice('');
+  };
+  const saveEdit = (item: LeadService) => {
+    if (editPrice !== '' && (!Number.isFinite(Number(editPrice)) || Number(editPrice) < 0)) {
+      setActionError('Informe um preço válido igual ou maior que zero.');
+      return;
+    }
+    setActionError('');
+    updateLeadService.mutate({
+      leadId,
+      leadServiceId: item.id,
+      data: { price: editPrice === '' ? null : Number(editPrice), billingType: editBilling || null },
+    }, {
+      onSuccess: () => {
+        setEditingId(null);
+        setNotice('Condições comerciais atualizadas.');
+        void Promise.all([refreshLinks(), refreshCatalog()]);
+      },
+      onError: () => setActionError('Não foi possível salvar as condições deste serviço. Tente novamente.'),
+    });
+  };
+  const confirmRemove = () => {
+    if (!removeTarget) return;
+    setActionError('');
+    deleteLeadService.mutate({ leadId, leadServiceId: removeTarget.id }, {
+      onSuccess: () => {
+        setRemoveTarget(null);
+        setNotice('Serviço removido desta oferta. O histórico foi preservado.');
+        void Promise.all([refreshLinks(), refreshCatalog()]);
+      },
+      onError: () => setActionError('Não foi possível remover o serviço deste lead. Tente novamente.'),
+    });
+  };
+  const saving = createLeadService.isPending || updateLeadService.isPending || deleteLeadService.isPending;
+  const controlClass = 'min-h-10 min-w-0 rounded-lg border border-white/15 bg-[#263758] px-3 py-2 text-sm text-white outline-none focus:border-[#9fe4e5]';
+
+  return (
+    <section aria-labelledby="lead-services-heading" className="mx-5 mt-6 rounded-2xl border border-white/10 bg-white/[.045] p-4 sm:mx-7 sm:p-5" data-testid="section-lead-services">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="font-mono-vg text-[9px] uppercase tracking-[.16em] text-[#9fe4e5]">/ oferta comercial</p>
+          <h3 id="lead-services-heading" className="mt-1 font-display text-lg font-semibold">Serviços do lead</h3>
+          <p className="mt-1 text-xs leading-5 text-slate-400">Valores ajustados aqui não alteram o catálogo.</p>
+        </div>
+        {leadServices.length > 0 && <span className="shrink-0 rounded-full bg-white/10 px-2.5 py-1 font-mono-vg text-[9px] uppercase tracking-[.12em] text-slate-300">{leadServices.length} {leadServices.length === 1 ? 'serviço' : 'serviços'}</span>}
+      </div>
+
+      {leadServicesQuery.isLoading ? (
+        <div role="status" aria-live="polite" data-testid="status-lead-services-loading" className="mt-4 space-y-2">
+          <span className="block h-12 animate-pulse rounded-xl bg-white/10" /><span className="block h-12 animate-pulse rounded-xl bg-white/[.07]" />
+        </div>
+      ) : leadServicesQuery.isError ? (
+        <div role="alert" data-testid="status-lead-services-error" className="mt-4 rounded-xl border border-[#b96762]/40 bg-[#b96762]/10 p-3">
+          <p className="flex items-center gap-2 text-xs font-semibold text-[#f2b9b3]"><AlertCircle className="h-4 w-4" aria-hidden="true" /> Não foi possível carregar os serviços deste lead.</p>
+          <button type="button" onClick={() => void leadServicesQuery.refetch()} data-testid="button-lead-services-retry" className="mt-2 rounded-lg border border-white/20 px-3 py-2 text-xs font-bold text-white hover:bg-white/10">Tentar novamente</button>
+        </div>
+      ) : leadServices.length === 0 ? (
+        <div data-testid="status-lead-services-empty" className="mt-4 rounded-xl border border-dashed border-white/20 px-4 py-3">
+          <p className="text-xs font-semibold text-slate-200">Nenhum serviço do catálogo vinculado.</p>
+          {legacyService && <p data-testid="text-legacy-lead-service" className="mt-1 text-xs text-slate-400">Interesse informado no site: {serviceBySlug(legacyService)?.label || legacyService}</p>}
+        </div>
+      ) : (
+        <div className="mt-4 divide-y divide-white/10" data-testid="list-lead-services">
+          {leadServices.map((item) => {
+            const isEditing = editingId === item.id;
+            return <article key={item.id} data-testid={`row-lead-service-${item.id}`} className="py-3 first:pt-0 last:pb-0">
+              <div className="flex min-w-0 items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h4 data-testid={`text-lead-service-name-${item.id}`} className="break-words text-sm font-bold text-white">{item.name}</h4>
+                  {!isEditing && <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-300">
+                    <span data-testid={`text-lead-service-price-${item.id}`} className="font-semibold tabular-nums">{item.price === null ? 'Preço a definir' : moneyBRL(item.price)}</span>
+                    <span className="rounded-full bg-[#9fe4e5]/10 px-2 py-0.5 text-[10px] font-bold text-[#b8d9da]" data-testid={`status-lead-service-billing-${item.id}`}>{billingText(item.billingType)}</span>
+                  </div>}
+                </div>
+                {!isEditing && <div className="flex shrink-0 gap-1.5">
+                  <button type="button" onClick={() => startEdit(item)} aria-label={`Editar ${item.name}`} data-testid={`button-lead-service-edit-${item.id}`} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-white/15 px-2.5 text-[11px] font-bold text-slate-200 hover:border-[#9fe4e5] hover:text-white"><Pencil className="h-3 w-3" aria-hidden="true" /><span className="hidden sm:inline">Editar</span></button>
+                  <button type="button" onClick={() => { setRemoveTarget(item); setActionError(''); }} aria-label={`Remover ${item.name} deste lead`} data-testid={`button-lead-service-remove-${item.id}`} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#d18b86]/30 px-2.5 text-[11px] font-bold text-[#edb0aa] hover:bg-[#b96762]/15"><Trash2 className="h-3 w-3" aria-hidden="true" /><span className="hidden sm:inline">Remover</span></button>
+                </div>}
+              </div>
+              {isEditing && <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+                <label className="text-[10px] font-bold uppercase tracking-[.1em] text-slate-400">Preço em R$<input type="number" min="0" step="0.01" inputMode="decimal" aria-label={`Preço de ${item.name}`} data-testid={`input-lead-service-price-${item.id}`} value={editPrice} onChange={(event) => setEditPrice(event.target.value)} placeholder="Sem preço definido" className={`${controlClass} mt-1 w-full`} /></label>
+                <label className="text-[10px] font-bold uppercase tracking-[.1em] text-slate-400">Cobrança<select aria-label={`Tipo de cobrança de ${item.name}`} data-testid={`select-lead-service-billing-${item.id}`} value={editBilling} onChange={(event) => setEditBilling(event.target.value as LeadServiceBilling | '')} className={`${controlClass} mt-1 w-full`}><option value="">A definir</option><option value="recurring">Recorrente</option><option value="one_time">Pontual</option></select></label>
+                <div className="flex gap-2 sm:pb-0">
+                  <button type="button" disabled={saving} onClick={() => saveEdit(item)} data-testid={`button-lead-service-save-${item.id}`} className="min-h-10 flex-1 rounded-lg bg-[#9fe4e5] px-3 text-xs font-extrabold text-[#202f4d] disabled:opacity-50 sm:flex-none">{updateLeadService.isPending ? 'Salvando…' : 'Salvar'}</button>
+                  <button type="button" disabled={saving} onClick={() => setEditingId(null)} data-testid={`button-lead-service-cancel-${item.id}`} className="min-h-10 rounded-lg border border-white/15 px-3 text-xs font-bold text-slate-200 disabled:opacity-50">Cancelar</button>
+                </div>
+              </div>}
+            </article>;
+          })}
+        </div>
+      )}
+
+      <div className="mt-4 border-t border-white/10 pt-4">
+        <label htmlFor={`catalog-service-${leadId}`} className="text-[10px] font-extrabold uppercase tracking-[.12em] text-slate-300">Adicionar do catálogo</label>
+        {catalogQuery.isLoading ? <div role="status" data-testid="status-catalog-services-loading" className="mt-2 h-10 animate-pulse rounded-lg bg-white/10" /> : catalogQuery.isError ? (
+          <div role="alert" data-testid="status-catalog-services-error" className="mt-2 rounded-lg border border-[#b96762]/40 bg-[#b96762]/10 p-3 text-xs text-[#f2b9b3]">
+            <p>Não foi possível carregar o catálogo.</p><button type="button" onClick={() => void catalogQuery.refetch()} data-testid="button-catalog-services-retry" className="mt-2 font-bold underline underline-offset-2">Tentar novamente</button>
+          </div>
+        ) : catalogServices.length === 0 ? <p data-testid="status-catalog-services-empty" className="mt-2 rounded-lg bg-white/[.06] p-3 text-xs text-slate-400">O catálogo não tem serviços ativos disponíveis.</p> : (
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+            <select id={`catalog-service-${leadId}`} value={serviceChoice} onChange={(event) => { setServiceChoice(event.target.value); setActionError(''); setNotice(''); }} data-testid="select-add-lead-service" className={`${controlClass} flex-1`}>
+              <option value="">Selecione um serviço</option>
+              {catalogServices.map((service) => {
+                const alreadyLinked = leadServices.some((item) => item.serviceId === service.id);
+                return <option key={service.id} value={service.id} disabled={alreadyLinked}>{service.name}{alreadyLinked ? ' — já vinculado' : ''}</option>;
+              })}
+            </select>
+            <button type="button" disabled={!serviceChoice || duplicateChoice || saving || catalogQuery.isError || leadServicesQuery.isError} onClick={addService} data-testid="button-add-lead-service" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#9fe4e5] px-4 text-xs font-extrabold text-[#202f4d] transition-colors hover:bg-[#b8d9da] disabled:cursor-not-allowed disabled:opacity-45"><Plus className="h-3.5 w-3.5" aria-hidden="true" />{createLeadService.isPending ? 'Adicionando…' : 'Adicionar'}</button>
+          </div>
+        )}
+        {duplicateChoice && <p role="status" data-testid="status-lead-service-duplicate" className="mt-2 text-xs font-semibold text-[#f1d5a7]">Este serviço já está vinculado a este lead.</p>}
+      </div>
+      {actionError && <p role="alert" data-testid="alert-lead-service-action-error" className="mt-3 rounded-lg border border-[#d18b86]/40 bg-[#b96762]/10 px-3 py-2 text-xs font-semibold text-[#f2b9b3]">{actionError}</p>}
+      {notice && <p role="status" aria-live="polite" data-testid="status-lead-service-notice" className="mt-3 rounded-lg border border-[#9fe4e5]/25 bg-[#9fe4e5]/10 px-3 py-2 text-xs font-semibold text-[#b8d9da]">{notice}</p>}
+      {removeTarget && <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#061a36]/70 p-4 backdrop-blur-sm" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !deleteLeadService.isPending) setRemoveTarget(null); }}>
+        <section role="alertdialog" aria-modal="true" aria-labelledby="lead-service-remove-title" aria-describedby="lead-service-remove-description" data-testid="dialog-lead-service-remove" className="w-full max-w-md rounded-2xl border border-white/70 bg-[#f5f7fa] p-6 text-[#202f4d] shadow-2xl">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fbefee] text-[#a25652]"><Trash2 className="h-4 w-4" aria-hidden="true" /></div>
+          <h4 id="lead-service-remove-title" className="mt-4 font-display text-xl font-semibold">Remover serviço da oferta?</h4>
+          <p id="lead-service-remove-description" className="mt-2 text-sm leading-6 text-[#687890]"><strong>{removeTarget.name}</strong> deixará de aparecer entre os serviços deste lead. O histórico será preservado.</p>
+          <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <button type="button" disabled={deleteLeadService.isPending} onClick={() => setRemoveTarget(null)} data-testid="button-lead-service-remove-cancel" className="min-h-10 rounded-lg border border-[#c3d1df] bg-white px-4 text-xs font-bold disabled:opacity-50">Manter serviço</button>
+            <button type="button" disabled={deleteLeadService.isPending} onClick={confirmRemove} data-testid="button-lead-service-remove-confirm" className="min-h-10 rounded-lg bg-[#a25652] px-4 text-xs font-extrabold text-white disabled:opacity-50">{deleteLeadService.isPending ? 'Removendo…' : 'Remover serviço'}</button>
+          </div>
+        </section>
+      </div>}
+    </section>
+  );
+}
 
 function SignInPage() {
   const [, setLocation] = useLocation();
@@ -1132,6 +1316,7 @@ function AdminPage() {
   const { getToken } = useAuth();
   const [leads, setLeads] = useState<CrmLead[]>([]);
   const [selected, setSelected] = useState<CrmLead | null>(null);
+  const [serviceLabelsByLead, setServiceLabelsByLead] = useState<Record<number, string>>({});
   const [notes, setNotes] = useState<CrmNote[]>([]);
   const [activities, setActivities] = useState<CrmActivity[]>([]);
   const [summary, setSummary] = useState<Record<string, { count: number; label: string }>>({});
@@ -1157,7 +1342,14 @@ function AdminPage() {
   const [pendingAssignment, setPendingAssignment] = useState<number | null | undefined>(undefined);
   const [pendingStatus, setPendingStatus] = useState<string | undefined>(undefined);
   const [teamOpen, setTeamOpen] = useState(false);
+  const [servicesOpen, setServicesOpen] = useState(false);
   const [newTeamUser, setNewTeamUser] = useState({ email: '', name: '', role: 'operator' as CrmRole });
+
+  useEffect(() => {
+    setBaseUrl(API_BASE || null);
+    setAuthTokenGetter(getToken);
+    return () => setAuthTokenGetter(null);
+  }, [getToken]);
 
   const apiFetch = async (path: string, init: RequestInit = {}) => {
     const token = await getToken();
@@ -1411,10 +1603,12 @@ function AdminPage() {
         </div>
       </header>
        <main className="mx-auto max-w-7xl px-5 py-8 lg:px-10 lg:py-12">
+         {selected && !servicesOpen && <ProposalGenerator key={selected.id} lead={{ id: selected.id, name: selected.name, company: selected.company, email: selected.email, whatsapp: selected.whatsapp }} logoPath={assetUrl(logoPath)} />}
+        {servicesOpen ? <ServiceCatalogManager onBack={() => setServicesOpen(false)} /> : <>
          <div className="mb-8 flex flex-col justify-between gap-5 rounded-3xl border border-white/80 bg-white/65 p-6 shadow-[0_16px_45px_rgba(32,47,77,.07)] sm:flex-row sm:items-end sm:p-8">
            <div><div className="flex items-center gap-2 font-mono-vg text-[10px] uppercase tracking-[.2em] text-[#58739f]"><span className="h-2 w-2 rounded-full bg-[#58c5c8]" /> visão geral</div><h1 className="mt-3 font-display text-3xl font-semibold tracking-[-.05em] sm:text-5xl">Oportunidades em movimento.</h1><p className="mt-2 max-w-xl text-sm text-[#687890]">Acompanhe seus contatos e mantenha cada oportunidade avançando.</p></div>
              <div className="flex flex-wrap gap-2">
-              {(crmUser?.role === 'owner' || crmUser?.role === 'admin') && <button type="button" onClick={() => setTeamOpen(true)} className="flex w-fit items-center gap-2 rounded-lg border border-[#c3d1df] bg-white px-4 py-3 text-xs font-extrabold text-[#202f4d] transition-colors hover:border-[#58739f]"><UserCog className="h-3.5 w-3.5" /> Equipe</button>}
+               {(crmUser?.role === 'owner' || crmUser?.role === 'admin') && <><button type="button" onClick={() => setTeamOpen(true)} data-testid="button-open-team" className="flex w-fit items-center gap-2 rounded-lg border border-[#c3d1df] bg-white px-4 py-3 text-xs font-extrabold text-[#202f4d] transition-colors hover:border-[#58739f]"><UserCog className="h-3.5 w-3.5" /> Equipe</button><button type="button" onClick={() => setServicesOpen(true)} data-testid="button-open-services" className="flex w-fit items-center gap-2 rounded-lg border border-[#c3d1df] bg-white px-4 py-3 text-xs font-extrabold text-[#202f4d] transition-colors hover:border-[#58bfc2] hover:text-[#3f8588]"><FileText className="h-3.5 w-3.5" /> Serviços</button></>}
               <button type="button" onClick={() => { setReportsOpen(true); void loadReports(); }} className="flex w-fit items-center gap-2 rounded-lg border border-[#c3d1df] bg-white px-4 py-3 text-xs font-extrabold text-[#202f4d] transition-colors hover:border-[#58739f]"><BarChart3 className="h-3.5 w-3.5" /> Relatórios</button>
              <button type="button" onClick={() => setManualLeadOpen(true)} className="flex w-fit items-center gap-2 rounded-lg bg-[#202f4d] px-4 py-3 text-xs font-extrabold text-white shadow-[0_8px_18px_rgba(32,47,77,.16)] transition-all hover:-translate-y-0.5 hover:bg-[#58739f]"><Plus className="h-3.5 w-3.5" /> Novo lead</button>
              <button type="button" onClick={() => void loadLeads()} className="flex w-fit items-center gap-2 rounded-lg border border-[#c3d1df] bg-white px-4 py-3 text-xs font-extrabold text-[#202f4d] transition-colors hover:border-[#58739f]">Atualizar <ArrowRight className="h-3.5 w-3.5" /></button>
@@ -1445,10 +1639,10 @@ function AdminPage() {
               <select value={status} onChange={(event) => setStatus(event.target.value)} className="rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3.5 py-3 text-sm outline-none focus:border-[#58739f]"><option value="">Todos os status</option>{Object.entries(CRM_STATUS_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select>
               <select value={source} onChange={(event) => setSource(event.target.value)} className="rounded-lg border border-[#c3d1df] bg-[#f5f7fa] px-3.5 py-3 text-sm outline-none focus:border-[#58739f]"><option value="">Todas as origens</option>{CRM_SOURCE_OPTIONS.map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select>
             </div>
-              {loading ? <p className="p-8 text-sm text-[#56657d]">Carregando leads...</p> : leads.length === 0 ? <div className="flex min-h-[300px] flex-col items-center justify-center px-6 py-12 text-center"><div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e8f7f7] text-[#4aaeb2]"><BarChart3 className="h-6 w-6" /></div><p className="mt-5 font-display text-2xl font-semibold">{crmUser?.role === 'operator' ? '0 leads atribuídos' : 'Nenhum lead encontrado'}</p><p className="mt-2 max-w-sm text-sm leading-6 text-[#687890]">{crmUser?.role === 'operator' ? 'Quando uma oportunidade for direcionada para você, ela aparecerá aqui.' : 'Os novos contatos do site aparecerão aqui.'}</p></div> : <div className="divide-y divide-[#edf1f5]">{leads.map((lead) => <button type="button" key={lead.id} onClick={() => void openLead(lead)} className={`flex w-full items-start justify-between gap-4 p-5 text-left transition-colors hover:bg-[#f5f7fa] ${selected?.id === lead.id ? 'bg-[#eef8f8]' : ''}`}><div className="min-w-0"><p className="truncate font-bold">{lead.name}</p><p className="mt-1 truncate text-sm text-[#56657d]">{lead.company || lead.email}</p><p className="mt-2 text-[11px] text-[#9caac0]">{lead.service ? serviceBySlug(lead.service)?.label || lead.service : 'Serviço não informado'} · {formatDate(lead.createdAt)}</p></div><div className="flex shrink-0 flex-wrap justify-end gap-1.5"><span className="rounded-full bg-[#e6edf4] px-2.5 py-1 text-[10px] font-extrabold text-[#58739f]">{CRM_STATUS_LABELS[lead.status] || lead.status}</span><span className="rounded-full bg-[#eef8f8] px-2.5 py-1 text-[10px] font-extrabold text-[#587f82]">{CRM_SOURCE_LABELS[lead.source] || lead.source}</span></div></button>)}</div>}
+               {loading ? <p className="p-8 text-sm text-[#56657d]">Carregando leads...</p> : leads.length === 0 ? <div className="flex min-h-[300px] flex-col items-center justify-center px-6 py-12 text-center"><div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e8f7f7] text-[#4aaeb2]"><BarChart3 className="h-6 w-6" /></div><p className="mt-5 font-display text-2xl font-semibold">{crmUser?.role === 'operator' ? '0 leads atribuídos' : 'Nenhum lead encontrado'}</p><p className="mt-2 max-w-sm text-sm leading-6 text-[#687890]">{crmUser?.role === 'operator' ? 'Quando uma oportunidade for direcionada para você, ela aparecerá aqui.' : 'Os novos contatos do site aparecerão aqui.'}</p></div> : <div className="divide-y divide-[#edf1f5]">{leads.map((lead) => <button type="button" key={lead.id} onClick={() => void openLead(lead)} className={`flex w-full items-start justify-between gap-4 p-5 text-left transition-colors hover:bg-[#f5f7fa] ${selected?.id === lead.id ? 'bg-[#eef8f8]' : ''}`}><div className="min-w-0"><p className="truncate font-bold">{lead.name}</p><p className="mt-1 truncate text-sm text-[#56657d]">{lead.company || lead.email}</p><p data-testid={`text-lead-services-summary-${lead.id}`} className="mt-2 truncate text-[11px] text-[#9caac0]">{serviceLabelsByLead[lead.id] || lead.serviceNames?.join(', ') || (lead.service ? serviceBySlug(lead.service)?.label || lead.service : 'Serviço não informado')} · {formatDate(lead.createdAt)}</p></div><div className="flex shrink-0 flex-wrap justify-end gap-1.5"><span className="rounded-full bg-[#e6edf4] px-2.5 py-1 text-[10px] font-extrabold text-[#58739f]">{CRM_STATUS_LABELS[lead.status] || lead.status}</span><span className="rounded-full bg-[#eef8f8] px-2.5 py-1 text-[10px] font-extrabold text-[#587f82]">{CRM_SOURCE_LABELS[lead.source] || lead.source}</span></div></button>)}</div>}
           </section>
              <aside className="relative overflow-hidden rounded-[2rem] border border-[#304466] bg-[linear-gradient(145deg,#202f4d_0%,#142744_100%)] text-white shadow-[0_16px_35px_rgba(32,47,77,.18)]">
-                {!selected ? <div className="flex min-h-[360px] flex-col justify-center p-7"><div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#9fe4e5] text-[#202f4d]"><BarChart3 className="h-5 w-5" /></div><p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#9fe4e5]">/ detalhe do lead</p><h2 className="mt-3 font-display text-3xl font-semibold">Nenhuma oportunidade selecionada</h2></div> : <div><div className="border-b border-white/10 bg-white/[.04] px-7 py-6"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#9fe4e5]">/ lead #{selected.id}</p><div className="mt-3 flex flex-wrap items-center gap-2"><h2 className="max-w-[calc(100%-2.5rem)] font-display text-3xl font-semibold leading-tight">{selected.name}</h2><span className="rounded-full bg-[#9fe4e5]/15 px-2.5 py-1 text-[10px] font-extrabold text-[#9fe4e5]">{CRM_SOURCE_LABELS[selected.source] || selected.source}</span></div><div className="mt-3 flex flex-wrap gap-1.5"><span className="rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-extrabold text-[#9fe4e5]">{CRM_STATUS_LABELS[selected.status] || selected.status}</span></div></div><button type="button" onClick={() => setSelected(null)} aria-label="Fechar detalhes" className="shrink-0 rounded-full border border-white/20 p-2 text-slate-300 hover:border-[#9fe4e5] hover:text-[#9fe4e5]"><X className="h-4 w-4" /></button></div></div><div className="space-y-2 border-b border-white/10 px-7 py-6 text-sm"><p className="text-slate-300">{selected.company || 'Empresa não informada'}</p><a href={`mailto:${selected.email}`} className="block text-[#9fe4e5]">{selected.email}</a><a href={`tel:${selected.whatsapp}`} className="block text-[#9fe4e5]">{selected.whatsapp}</a><p className="pt-2 text-xs text-slate-400">{selected.service ? serviceBySlug(selected.service)?.label || selected.service : 'Serviço não informado'}</p></div><label className="block px-7 pt-6 text-[10px] font-extrabold uppercase tracking-[.15em] text-[#9fe4e5]">Status<select value={selected.status} onChange={(event) => void updateStatus(event.target.value)} className="mt-2 w-full rounded-lg border border-white/15 bg-[#263758] px-3 py-3 text-sm font-semibold normal-case tracking-normal text-white outline-none"><option value="new">Novo</option><option value="contacted">Contato iniciado</option><option value="meeting">Reunião agendada</option><option value="proposal">Proposta enviada</option><option value="won">Ganho</option><option value="lost">Perdido</option></select></label>{selected.message && <div className="mx-7 mt-6 rounded-xl bg-white/[.06] p-4 text-sm leading-6 text-slate-300"><p className="mb-2 font-mono-vg text-[9px] uppercase tracking-[.16em] text-slate-500">Mensagem</p>{selected.message}</div>}<form onSubmit={addNote} className="mx-7 mt-6"><label htmlFor="crm-note" className="font-mono-vg text-[10px] uppercase tracking-[.16em] text-[#9fe4e5]">Nova observação</label><textarea id="crm-note" value={note} onChange={(event) => setNote(event.target.value)} rows={3} placeholder="Registre o próximo passo..." className="mt-2 w-full resize-none rounded-xl border border-white/15 bg-[#263758] px-3 py-3 text-sm text-white placeholder:text-slate-500 outline-none focus:border-[#9fe4e5]" /><button type="submit" className="mt-3 rounded-lg bg-[#9fe4e5] px-4 py-2.5 text-xs font-extrabold text-[#202f4d]">Salvar observação</button></form>{notes.length > 0 && <div className="mt-6 border-t border-white/10 px-7 pb-1 pt-6"><p className="font-mono-vg text-[10px] uppercase tracking-[.16em] text-[#9fe4e5]">Observações</p>{notes.map((item) => <div key={item.id} className="mt-3 border-l-2 border-[#9fe4e5] pl-3 text-sm leading-6 text-slate-300"><p>{item.body}</p><p className="mt-1 text-[10px] text-slate-500">{formatDate(item.createdAt)}</p></div>)}</div>}{activities.length > 0 && <div className="mt-6 border-t border-white/10 px-7 pb-6 pt-6"><p className="font-mono-vg text-[10px] uppercase tracking-[.16em] text-slate-500">Histórico</p>{activities.slice(0, 5).map((item) => <p key={item.id} className="mt-2 text-xs text-slate-400">{item.detail} · {formatDate(item.createdAt)}</p>)}</div>}</div>}
+                 {!selected ? <div className="flex min-h-[360px] flex-col justify-center p-7"><div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#9fe4e5] text-[#202f4d]"><BarChart3 className="h-5 w-5" /></div><p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#9fe4e5]">/ detalhe do lead</p><h2 className="mt-3 font-display text-3xl font-semibold">Nenhuma oportunidade selecionada</h2></div> : <div><div className="border-b border-white/10 bg-white/[.04] px-7 py-6"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="font-mono-vg text-[10px] uppercase tracking-[.18em] text-[#9fe4e5]">/ lead #{selected.id}</p><div className="mt-3 flex flex-wrap items-center gap-2"><h2 className="max-w-[calc(100%-2.5rem)] font-display text-3xl font-semibold leading-tight">{selected.name}</h2><span className="rounded-full bg-[#9fe4e5]/15 px-2.5 py-1 text-[10px] font-extrabold text-[#9fe4e5]">{CRM_SOURCE_LABELS[selected.source] || selected.source}</span></div><div className="mt-3 flex flex-wrap gap-1.5"><span className="rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-extrabold text-[#9fe4e5]">{CRM_STATUS_LABELS[selected.status] || selected.status}</span></div></div><button type="button" onClick={() => setSelected(null)} aria-label="Fechar detalhes" className="shrink-0 rounded-full border border-white/20 p-2 text-slate-300 hover:border-[#9fe4e5] hover:text-[#9fe4e5]"><X className="h-4 w-4" /></button></div></div><div className="space-y-2 border-b border-white/10 px-7 py-6 text-sm"><p className="text-slate-300">{selected.company || 'Empresa não informada'}</p><a href={`mailto:${selected.email}`} className="block text-[#9fe4e5]">{selected.email}</a><a href={`tel:${selected.whatsapp}`} className="block text-[#9fe4e5]">{selected.whatsapp}</a></div><label className="block px-7 pt-6 text-[10px] font-extrabold uppercase tracking-[.15em] text-[#9fe4e5]">Status<select value={selected.status} onChange={(event) => void updateStatus(event.target.value)} className="mt-2 w-full rounded-lg border border-white/15 bg-[#263758] px-3 py-3 text-sm font-semibold normal-case tracking-normal text-white outline-none"><option value="new">Novo</option><option value="contacted">Contato iniciado</option><option value="meeting">Reunião agendada</option><option value="proposal">Proposta enviada</option><option value="won">Ganho</option><option value="lost">Perdido</option></select></label><LeadServicesPanel key={selected.id} leadId={selected.id} legacyService={selected.service} onNamesChange={(names) => setServiceLabelsByLead((current) => current[selected.id] === names ? current : { ...current, [selected.id]: names })} />{selected.message && <div className="mx-7 mt-6 rounded-xl bg-white/[.06] p-4 text-sm leading-6 text-slate-300"><p className="mb-2 font-mono-vg text-[9px] uppercase tracking-[.16em] text-slate-500">Mensagem</p>{selected.message}</div>}<form onSubmit={addNote} className="mx-7 mt-6"><label htmlFor="crm-note" className="font-mono-vg text-[10px] uppercase tracking-[.16em] text-[#9fe4e5]">Nova observação</label><textarea id="crm-note" value={note} onChange={(event) => setNote(event.target.value)} rows={3} placeholder="Registre o próximo passo..." className="mt-2 w-full resize-none rounded-xl border border-white/15 bg-[#263758] px-3 py-3 text-sm text-white placeholder:text-slate-500 outline-none focus:border-[#9fe4e5]" /><button type="submit" className="mt-3 rounded-lg bg-[#9fe4e5] px-4 py-2.5 text-xs font-extrabold text-[#202f4d]">Salvar observação</button></form>{notes.length > 0 && <div className="mt-6 border-t border-white/10 px-7 pb-1 pt-6"><p className="font-mono-vg text-[10px] uppercase tracking-[.16em] text-[#9fe4e5]">Observações</p>{notes.map((item) => <div key={item.id} className="mt-3 border-l-2 border-[#9fe4e5] pl-3 text-sm leading-6 text-slate-300"><p>{item.body}</p><p className="mt-1 text-[10px] text-slate-500">{formatDate(item.createdAt)}</p></div>)}</div>}{activities.length > 0 && <div className="mt-6 border-t border-white/10 px-7 pb-6 pt-6"><p className="font-mono-vg text-[10px] uppercase tracking-[.16em] text-slate-500">Histórico</p>{activities.slice(0, 5).map((item) => <p key={item.id} className="mt-2 text-xs text-slate-400">{item.detail} · {formatDate(item.createdAt)}</p>)}</div>}</div>}
           </aside>
          </div>
           {reportsOpen && <div className="fixed inset-0 z-50 overflow-y-auto bg-[#061a36]/70 px-5 py-8" role="dialog" aria-modal="true" aria-labelledby="reports-title">
@@ -1489,6 +1683,7 @@ function AdminPage() {
              <div className="mt-7 flex justify-end gap-3"><button type="button" onClick={() => setManualLeadOpen(false)} className="rounded-lg border border-[#c3d1df] px-4 py-3 text-xs font-extrabold text-[#202f4d]">Cancelar</button><button type="submit" disabled={savingLead} className="rounded-lg bg-[#202f4d] px-5 py-3 text-xs font-extrabold text-white hover:bg-[#58739f] disabled:opacity-60">{savingLead ? 'Salvando...' : 'Cadastrar lead'}</button></div>
            </form>
          </div>}
+        </>}
       </main>
     </div>
   );

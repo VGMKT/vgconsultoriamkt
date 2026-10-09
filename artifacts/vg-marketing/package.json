@@ -79,6 +79,7 @@
     "@astrojs/react": "^6.0.4",
     "@clerk/react": "^6.14.5",
     "@clerk/themes": "^2.4.57",
-    "astro": "^7.2.4"
+    "astro": "^7.2.4",
+    "jspdf": "^4.2.1"
   }
 }

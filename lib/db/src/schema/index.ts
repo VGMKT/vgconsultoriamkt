@@ -1,4 +1,4 @@
-import { doublePrecision, integer, pgTable, serial, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import { doublePrecision, integer, numeric, pgTable, serial, text, timestamp, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 
 export const leadStatuses = ['new', 'contacted', 'meeting', 'proposal', 'won', 'lost'] as const;
@@ -9,6 +9,8 @@ export const manualLeadSources = ['manual', 'referral', 'active_offer', 'other']
 export type ManualLeadSource = (typeof manualLeadSources)[number];
 export const crmRoles = ['owner', 'admin', 'manager', 'operator'] as const;
 export type CrmRole = (typeof crmRoles)[number];
+export const serviceBillingTypes = ['recurring', 'one_time'] as const;
+export type ServiceBillingType = (typeof serviceBillingTypes)[number];
 
 export const leadsTable = pgTable('leads', {
   id: serial('id').primaryKey(),
@@ -70,6 +72,30 @@ export const crmUsersTable = pgTable('crm_users', {
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
 });
 
+export const crmServicesTable = pgTable('crm_services', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 180 }).notNull(),
+  description: text('description').notNull().default(''),
+  scope: text('scope').notNull().default(''),
+  basePrice: numeric('base_price', { precision: 12, scale: 2, mode: 'number' }),
+  billingType: varchar('billing_type', { length: 20 }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
+});
+
+export const leadServicesTable = pgTable('lead_services', {
+  id: serial('id').primaryKey(),
+  leadId: integer('lead_id').notNull().references(() => leadsTable.id, { onDelete: 'cascade' }),
+  serviceId: integer('service_id').notNull().references(() => crmServicesTable.id, { onDelete: 'restrict' }),
+  serviceName: varchar('service_name', { length: 180 }).notNull(),
+  price: numeric('price', { precision: 12, scale: 2, mode: 'number' }),
+  billingType: varchar('billing_type', { length: 20 }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  removedAt: timestamp('removed_at', { withTimezone: true }),
+});
+
 export const insertLeadSchema = createInsertSchema(leadsTable).omit({
   id: true,
   createdAt: true,
@@ -80,3 +106,5 @@ export type Lead = typeof leadsTable.$inferSelect;
 export type LeadNote = typeof leadNotesTable.$inferSelect;
 export type LeadActivity = typeof leadActivitiesTable.$inferSelect;
 export type CrmUser = typeof crmUsersTable.$inferSelect;
+export type CrmService = typeof crmServicesTable.$inferSelect;
+export type LeadService = typeof leadServicesTable.$inferSelect;
