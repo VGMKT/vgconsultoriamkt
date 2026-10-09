@@ -6,4 +6,12 @@
 - [Render credentials](render-credentials.md) — required Clerk and deployment keys are already configured; never request or store their values.
 - [CRM schema deploy safety](crm-schema-deploy-safety.md) — avoid schema changes that make Render's non-interactive Drizzle deploy prompt for a destructive truncate.
 - [GTM CSP allowlist](gtm-csp-allowlist.md) — Netlify CSP must allow Google Tag Manager, Google Ads, GA4, and Meta endpoints for browser tags to fire.
+- [Google Ads conversion verification](google-ads-gtm-csp.md) — GTM Preview can show a conversion tag firing while CSP still blocks the browser request; verify the live AW destination.
 - [Consent for lead geolocation](lead-attribution-consent.md) — coordinates are optional and collected only after explicit visitor authorization.
+- [Approved Home direction](approved-home-direction.md) — preserve the colorful narrative blocks, full lead form, official logo, and single-block testimonial carousel.
+- [SEO metadata parity](seo-metadata-parity.md) — keep Astro’s static metadata and React’s runtime metadata aligned for every public route.
+- [Static 404 routing](static-404-routing.md) — never use a global static fallback to index.html when unknown URLs must return HTTP 404.
+- [Public performance bundle accounting](public-performance-bundle-accounting.md) — performance budgets must include transitive local imports, including dynamically loaded public chunks.
+- [CRM service proposals](crm-service-proposals.md) — keep Leads concise; proposal PDFs carry service descriptions, per-service scope notes, editable prices, and recurring or one-time billing.
+- [CRM JSX edit safety](crm-jsx-safety.md) — reformat nested lead-detail JSX before structural edits, then typecheck and build before packaging.
+- [Orval integer schemas](orval-zod-compatibility.md) — generated Zod schemas in this workspace need numeric IDs with `multipleOf: 1`; enforce integer values in the API.

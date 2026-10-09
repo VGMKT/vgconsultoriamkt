@@ -29,7 +29,11 @@ function imageAsPng(source: string): Promise<string> {
   });
 }
 
-export function ProposalGenerator({ lead, logoPath }: { lead: ProposalLead; logoPath: string }) {
+export function ProposalGenerator({
+  lead,
+  logoPath,
+  buttonClassName = 'inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[#9fe4e5]/35 bg-[#9fe4e5]/10 px-2.5 text-[11px] font-bold text-[#b8d9da] transition-colors hover:bg-[#9fe4e5]/20',
+}: { lead: ProposalLead; logoPath: string; buttonClassName?: string }) {
   const [open, setOpen] = useState(false);
   const [scopes, setScopes] = useState<Record<number, string>>({});
   const [generating, setGenerating] = useState(false);
@@ -82,8 +86,8 @@ export function ProposalGenerator({ lead, logoPath }: { lead: ProposalLead; logo
   };
 
   return <>
-    <button type="button" onClick={() => setOpen(true)} data-testid="button-open-proposal" className="fixed bottom-5 right-5 z-40 flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#9fe4e5] px-5 text-sm font-extrabold text-[#202f4d] shadow-[0_12px_32px_rgba(20,39,67,.22)] transition-colors hover:bg-[#b8d9da] sm:bottom-8 sm:right-8">
-      <FileText className="h-4 w-4" aria-hidden="true" /> Gerar proposta em PDF
+    <button type="button" onClick={() => setOpen(true)} aria-label="Gerar proposta em PDF" title="Gerar proposta em PDF" data-testid="button-open-proposal" className={buttonClassName}>
+      <FileText className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> Gerar proposta
     </button>
     {open && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#101c31]/70 p-3 backdrop-blur-sm sm:p-6" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }}>
       <section role="dialog" aria-modal="true" aria-labelledby="proposal-title" data-testid="dialog-proposal" className="flex max-h-[min(92dvh,900px)] w-full max-w-[760px] flex-col overflow-hidden rounded-2xl border border-[#d9e0e8] bg-[#f6f8fb] text-[#263248] shadow-[0_28px_90px_rgba(10,22,42,.34)]">
