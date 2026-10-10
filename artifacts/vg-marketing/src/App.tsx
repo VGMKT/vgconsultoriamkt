@@ -1057,14 +1057,16 @@ function LeadServicesPanel({ leadId, legacyService, onNamesChange, proposalLead,
 
   return (
     <section aria-labelledby="lead-services-heading" className="mx-5 mt-6 rounded-2xl border border-white/10 bg-white/[.045] p-4 sm:mx-7 sm:p-5" data-testid="section-lead-services">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
           <p className="font-mono-vg text-[9px] uppercase tracking-[.16em] text-[#9fe4e5]">/ oferta comercial</p>
           <h3 id="lead-services-heading" className="mt-1 font-display text-lg font-semibold">Serviços do lead</h3>
-          <p className="mt-1 text-xs leading-5 text-slate-400">Valores ajustados aqui não alteram o catálogo.</p>
         </div>
         {leadServices.length > 0 && <span className="shrink-0 rounded-full bg-white/10 px-2.5 py-1 font-mono-vg text-[9px] uppercase tracking-[.12em] text-slate-300">{leadServices.length} {leadServices.length === 1 ? 'serviço' : 'serviços'}</span>}
       </div>
+      {leadServices.length > 0 && <div className="mt-3">
+        <ProposalGenerator lead={proposalLead} logoPath={logoPath} buttonClassName="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#9fe4e5] px-3 text-xs font-extrabold text-[#202f4d] transition-colors hover:bg-[#b8f0f0]" />
+      </div>}
 
       {leadServicesQuery.isLoading ? (
         <div role="status" aria-live="polite" data-testid="status-lead-services-loading" className="mt-4 space-y-2">
@@ -1082,7 +1084,7 @@ function LeadServicesPanel({ leadId, legacyService, onNamesChange, proposalLead,
         </div>
       ) : (
         <div className="mt-4 divide-y divide-white/10" data-testid="list-lead-services">
-          {leadServices.map((item, index) => {
+          {leadServices.map((item) => {
             const isEditing = editingId === item.id;
             return <article key={item.id} data-testid={`row-lead-service-${item.id}`} className="py-3 first:pt-0 last:pb-0">
               <div className="space-y-2">
@@ -1095,7 +1097,6 @@ function LeadServicesPanel({ leadId, legacyService, onNamesChange, proposalLead,
                 </div>
                 {!isEditing && <div className="flex flex-wrap items-center gap-1.5">
                   <button type="button" onClick={() => startEdit(item)} aria-label={`Editar ${item.name}`} data-testid={`button-lead-service-edit-${item.id}`} className="inline-flex h-9 items-center gap-1 rounded-lg border border-white/15 px-2 text-[10px] font-bold text-slate-200 hover:border-[#9fe4e5] hover:text-white"><Pencil className="h-3 w-3 shrink-0" aria-hidden="true" />Editar</button>
-                  {index === 0 && <ProposalGenerator lead={proposalLead} logoPath={logoPath} buttonClassName="inline-flex h-9 items-center gap-1 rounded-lg border border-[#9fe4e5]/35 bg-[#9fe4e5]/10 px-2 text-[10px] font-bold text-[#b8d9da] transition-colors hover:bg-[#9fe4e5]/20" />}
                   <button type="button" onClick={() => { setRemoveTarget(item); setActionError(''); }} aria-label={`Remover ${item.name} deste lead`} data-testid={`button-lead-service-remove-${item.id}`} className="inline-flex h-9 items-center gap-1 rounded-lg border border-[#d18b86]/30 px-2 text-[10px] font-bold text-[#edb0aa] hover:bg-[#b96762]/15"><Trash2 className="h-3 w-3 shrink-0" aria-hidden="true" />Remover</button>
                 </div>}
               </div>

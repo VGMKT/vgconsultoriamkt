@@ -139,6 +139,7 @@ worker.onmessage = (event: MessageEvent<GenerateProposalMessage>) => {
         pdf.line(left, y, pageWidth - right, y);
         y += 6;
       }
+      const titleStartY = y;
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(10.5);
       pdf.setTextColor(...navy);
@@ -154,16 +155,17 @@ worker.onmessage = (event: MessageEvent<GenerateProposalMessage>) => {
       pdf.text(
         billingLabel(service.billingType),
         pageWidth - right,
-        y - titleLines.length * 5 + 1,
+        titleStartY + 1,
         { align: 'right' },
       );
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(9);
       pdf.setTextColor(...navy);
-      pdf.text(money(service.price as number), pageWidth - right, y - titleLines.length * 5 + 6, {
+      pdf.text(money(service.price as number), pageWidth - right, titleStartY + 6, {
         align: 'right',
       });
 
+      y = Math.max(y, titleStartY + 13);
       pdf.setFont('helvetica', 'normal');
       drawWrapped(service.description, left, width - 4, 8.2, muted, 4.1);
       const scope = scopes[service.id]?.trim();
